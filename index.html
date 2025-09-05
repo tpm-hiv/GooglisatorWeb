@@ -682,7 +682,7 @@
             'CN': 'China', 'CX': 'Christmas Island', 'CC': 'Coco Islands', 'CO': 'Colombia',
             'KM': 'Comoros', 'CD': 'Congo, The Democratic Republic of the', 'CG': 'Congo',
             'CK': 'Cook Islands', 'CR': 'Costa Rica', 'HR': 'Croatia', 'CU': 'Cuba',
-            'CW': 'CuraÃƒÂ§ao', 'CY': 'Cyprus', 'CZ': 'Czech Republic', 'CI': 'Ivory Coast',
+            'CW': 'Curaçao', 'CY': 'Cyprus', 'CZ': 'Czech Republic', 'CI': 'Ivory Coast',
             'DK': 'Denmark', 'DJ': 'Djibouti', 'DM': 'Dominica', 'DO': 'Dominican Republic',
             'EC': 'Ecuador', 'EG': 'Egypt', 'SV': 'El Salvador', 'GQ': 'Equatorial Guinea',
             'ER': 'Eritrea', 'EE': 'Estonian', 'SZ': 'Swaziland', 'ET': 'Ethiopia',
@@ -732,7 +732,7 @@
             'US': 'USA', 'UY': 'Uruguay', 'UZ': 'Uzbekistan', 'VU': 'Vanuatu',
             'VE': 'Venezuela', 'VN': 'Vietnam', 'VG': 'British Virgin Islands',
             'VI': 'American Virgin Islands', 'WF': 'Wallis and Futuna Islands', 'EH': 'Western Sahara',
-            'YE': 'Yemen', 'ZM': 'Zambia', 'ZW': 'Zimbabwe', 'AX': 'Ã…land Islands'
+            'YE': 'Yemen', 'ZM': 'Zambia', 'ZW': 'Zimbabwe', 'AX': 'Åland Islands'
         };
 
         const genreMapping = {
@@ -843,10 +843,10 @@
             const clientPrefix = clientMapping[parsedData.provider] || parsedData.provider || 'UNKNOWN';
             const packageType = parsedData.isMLP ? 'MLP' : '';
             
-            // Use edited title if available, otherwise fallback to parsed title
-            const displayTitle = editableData['DisplayTitle'] || 
-                               (parsedData.studioReleaseTitle || parsedData.title || 'Unknown');
-            const normalizedTitle = normalizeTitle(displayTitle);
+            // Use edited OriginalReleaseTitle if available, otherwise fallback to parsed studio_release_title or title
+            const originalReleaseTitle = editableData['OriginalReleaseTitle'] || 
+                                        (parsedData.studioReleaseTitle || parsedData.title || 'Unknown');
+            const normalizedTitle = normalizeTitle(originalReleaseTitle);
             
             const org = parsedData.provider === 'metropolitanfilm' ? 
                 `NG${parsedData.vendorId}` : (parsedData.vendorId || 'UNKNOWN');
@@ -870,10 +870,23 @@
                         const territory = territoryEl ? territoryEl.textContent : 'WW';
                         const dataFile = asset.querySelector('data_file[role="source"]');
                         if (dataFile) {
-                            const localeEl = dataFile.querySelector('locale');
-                            const locale = localeEl ? localeEl.getAttribute('name') : 'en';
-                            const localeFormatted = locale === 'en' && territory === 'WW' ? 'en' : locale;
-                            const trailerType = territory === 'FR' ? 'Dub_Trailer' : 'Trailer';
+                            // Check for burned subtitles attribute
+                            const burnedSubsAttr = dataFile.querySelector('attribute[name="image.burned_subtitles.locale"]');
+                            let trailerType = '';
+                            let locale = 'en';
+                            
+                            if (burnedSubsAttr && burnedSubsAttr.textContent) {
+                                // If burned subtitles present, use Sub_Trailer with the burned subtitle locale
+                                trailerType = 'Sub_Trailer';
+                                locale = burnedSubsAttr.textContent;
+                            } else {
+                                // Otherwise use regular trailer logic
+                                const localeEl = dataFile.querySelector('locale');
+                                locale = localeEl ? localeEl.getAttribute('name') : 'en';
+                                trailerType = territory === 'FR' ? 'Dub_Trailer' : 'Trailer';
+                            }
+                            
+                            const localeFormatted = locale === 'en' && territory === 'WW' && !burnedSubsAttr ? 'en' : locale;
                             
                             const filename = generateAssetFilename({
                                 clientPrefix, packageType, normalizedTitle, locale: localeFormatted, 
@@ -882,7 +895,8 @@
                             
                             assets.push({
                                 type: `${trailerType} (${territory})`,
-                                description: territory === 'FR' ? 'French Dubbed Trailer' : 'International Trailer',
+                                description: burnedSubsAttr ? 'Subtitled Trailer' : 
+                                           (territory === 'FR' ? 'French Dubbed Trailer' : 'International Trailer'),
                                 filename: filename,
                                 locale: localeFormatted
                             });
@@ -1226,7 +1240,7 @@
 
                 const studioReleaseTitle = video.querySelector('studio_release_title');
                 if (!studioReleaseTitle || !studioReleaseTitle.textContent) {
-                    validationMessages.push('<studio_release_title> is missing. fallback to <title>...');
+                    validationMessages.push('<studio_release_title> is missing. Fallback to <title>...');
                 }
 
                 const language = xmlDoc.querySelector('language');
@@ -1396,7 +1410,7 @@
                     
                     input.addEventListener('input', (e) => {
                         editableData[fieldKey] = e.target.value;
-                        if (fieldKey === 'DisplayTitle') {
+                        if (fieldKey === 'DisplayTitle' || fieldKey === 'OriginalReleaseTitle') {
                             updateFilenamePreview(); // Update filename when title changes
                             populateAssetAnalysis(); // Update asset filenames when title changes
                         }
@@ -1428,10 +1442,10 @@
             const clientPrefix = clientMapping[parsedData.provider] || parsedData.provider;
             const packageType = parsedData.isMLP ? 'MLP' : '';
             
-            // Use edited title if available, otherwise fallback to parsed title
-            const displayTitle = editableData['DisplayTitle'] || 
-                                (parsedData.studioReleaseTitle || parsedData.title);
-            const normalizedTitle = normalizeTitle(displayTitle);
+            // Use edited OriginalReleaseTitle if available, otherwise fallback to parsed studio_release_title or title
+            const originalReleaseTitle = editableData['OriginalReleaseTitle'] || 
+                                        (parsedData.studioReleaseTitle || parsedData.title);
+            const normalizedTitle = normalizeTitle(originalReleaseTitle);
             
             const org = parsedData.provider === 'metropolitanfilm' ? 
                 `NG${parsedData.vendorId}` : parsedData.vendorId;
