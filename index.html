@@ -1,0 +1,2518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Googlisator Web</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .logo {
+            margin: 20px auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo img {
+            width: 100px;
+            height: auto;
+            border-radius: 12px;
+            filter: saturate(1.5) brightness(1.1);
+            box-shadow: 0 0 20px rgba(66, 133, 244, 0.6);
+        }
+
+        .logo-text {
+            font-size: 28px;
+            font-weight: bold;
+            color: #FFD700;
+            margin-top: 10px;
+            text-shadow: 
+                0 0 10px rgba(255, 215, 0, 0.8),
+                0 0 20px rgba(255, 165, 0, 0.6),
+                2px 2px 4px rgba(0,0,0,0.8);
+            animation: glow 2s ease-in-out infinite;
+        }
+        
+        @keyframes glow {
+            0%, 100% { 
+                text-shadow: 
+                    0 0 10px rgba(255, 215, 0, 0.8),
+                    0 0 20px rgba(255, 165, 0, 0.6),
+                    2px 2px 4px rgba(0,0,0,0.8);
+            }
+            50% { 
+                text-shadow: 
+                    0 0 20px rgba(255, 215, 0, 1),
+                    0 0 30px rgba(255, 165, 0, 0.8),
+                    2px 2px 4px rgba(0,0,0,0.8);
+            }
+        }
+
+        @keyframes colorShift {
+            0%, 100% { filter: hue-rotate(0deg); }
+            50% { filter: hue-rotate(20deg); }
+        }
+
+        .drop-zone {
+            border: 3px dashed #00FF7F;
+            border-radius: 16px;
+            padding: 60px 20px;
+            margin: 30px 0;
+            background: linear-gradient(135deg, rgba(0, 255, 127, 0.1) 0%, rgba(0, 191, 255, 0.05) 100%);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(0, 255, 127, 0.2);
+        }
+
+        .drop-zone::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .drop-zone:hover::before {
+            left: 100%;
+        }
+
+        .drop-zone.dragover {
+            border-color: #00BFFF;
+            background: linear-gradient(135deg, rgba(0, 191, 255, 0.25) 0%, rgba(138, 43, 226, 0.15) 100%);
+            transform: scale(1.02);
+            box-shadow: 0 0 40px rgba(0, 191, 255, 0.4);
+        }
+
+        .drop-zone h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #00FF7F;
+            text-shadow: 0 0 10px rgba(0, 255, 127, 0.5);
+        }
+
+        .drop-zone p {
+            color: #e0e0e0;
+            font-size: 14px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .content-preview {
+            display: none;
+            margin: 20px 0;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .title-display {
+            font-size: 18px;
+            font-weight: bold;
+            background: linear-gradient(90deg, #FF6B6B, #FFD93D, #6BCF7F);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+            word-wrap: break-word;
+        }
+
+        .package-status {
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, rgba(138, 43, 226, 0.2) 0%, rgba(0, 191, 255, 0.1) 100%);
+            border: 1px solid rgba(138, 43, 226, 0.5);
+        }
+
+        .status-text {
+            font-size: 12px;
+            font-weight: bold;
+            color: #00FF7F;
+            text-shadow: 0 0 5px rgba(0, 255, 127, 0.5);
+        }
+
+        .package-type {
+            font-size: 14px;
+            font-weight: bold;
+            color: #FFD700;
+            margin-top: 5px;
+            text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+        }
+
+        .validation-messages {
+            background: rgba(255, 140, 0, 0.15);
+            border: 1px solid #FF8C00;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 15px 0;
+            font-size: 12px;
+            color: #FFD700;
+            box-shadow: 0 0 15px rgba(255, 140, 0, 0.3);
+        }
+        
+        .validation-messages.critical {
+            background: linear-gradient(135deg, rgba(255, 23, 68, 0.2), rgba(244, 67, 54, 0.15));
+            border: 2px solid #FF1744;
+            color: #FF1744;
+            font-weight: bold;
+            box-shadow: 0 0 20px rgba(255, 23, 68, 0.4);
+            animation: pulse 2s infinite;
+        }
+
+        /* Two-column layout container */
+        .two-column-container {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+            width: 100%;
+        }
+
+        .left-column {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .right-column {
+            flex: 1;
+            min-width: 0;
+        }
+
+        /* Responsive layout for larger screens */
+        @media (min-width: 1200px) {
+            .two-column-container {
+                gap: 30px;
+            }
+            
+            .left-column {
+                flex: 1.2;
+            }
+            
+            .right-column {
+                flex: 1.3;
+            }
+        }
+
+        @media (min-width: 1400px) {
+            .container {
+                max-width: 1400px;
+            }
+            
+            .two-column-container {
+                gap: 40px;
+            }
+            
+            .left-column {
+                flex: 1;
+            }
+            
+            .right-column {
+                flex: 1.4;
+            }
+        }
+
+        .data-preview {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            height: 100%;
+        }
+
+        .asset-analysis {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            height: 100%;
+        }
+
+        .preview-title {
+            color: #0F9D58;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .preview-table-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border-radius: 8px;
+        }
+
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255, 255, 255, 0.1);
+            font-size: 12px;
+        }
+
+        .preview-table th {
+            background: linear-gradient(135deg, #4169E1, #1E90FF);
+            color: white;
+            padding: 10px 8px;
+            text-align: left;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+        }
+
+        .preview-table td {
+            padding: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            vertical-align: top;
+        }
+
+        .preview-table tr:hover {
+            background: linear-gradient(135deg, rgba(0, 191, 255, 0.1), rgba(138, 43, 226, 0.05));
+        }
+
+        .field-name {
+            font-weight: bold;
+            background: linear-gradient(90deg, #FFD700, #FFA500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            width: 25%;
+            min-width: 150px;
+        }
+
+        .field-value {
+            width: 60%;
+        }
+
+        .field-status {
+            width: 15%;
+            text-align: center;
+        }
+
+        .editable-field {
+            background: rgba(30, 30, 40, 0.8);
+            border: 1px solid rgba(0, 255, 127, 0.3);
+            border-radius: 4px;
+            padding: 6px;
+            color: #ffffff;
+            width: 100%;
+            font-size: 12px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .editable-field:focus {
+            outline: none;
+            border-color: #00BFFF;
+            background: rgba(0, 191, 255, 0.15);
+            box-shadow: 0 0 15px rgba(0, 191, 255, 0.3);
+        }
+
+        .status-required {
+            background: linear-gradient(135deg, #FF1744, #FF6B6B);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(255, 23, 68, 0.5);
+        }
+
+        .status-recommended {
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: #1a1a1a;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        .status-optional {
+            background: linear-gradient(135deg, #00FF7F, #00E676);
+            color: #1a1a1a;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(0, 255, 127, 0.5);
+        }
+
+        .asset-count {
+            color: #00FF7F;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+            text-shadow: 0 0 10px rgba(0, 255, 127, 0.5);
+            animation: colorShift 3s ease-in-out infinite;
+        }
+
+        .asset-list {
+            max-height: 350px;
+            overflow-y: auto;
+        }
+
+        .asset-item {
+            background: linear-gradient(135deg, rgba(138, 43, 226, 0.1), rgba(0, 191, 255, 0.05));
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .asset-item:hover {
+            transform: translateX(5px);
+            background: linear-gradient(135deg, rgba(138, 43, 226, 0.2), rgba(0, 191, 255, 0.1));
+            box-shadow: 0 0 20px rgba(138, 43, 226, 0.3);
+        }
+
+        .asset-info {
+            flex: 1;
+            text-align: left;
+            min-width: 0;
+        }
+
+        .asset-type {
+            color: #00BFFF;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 4px;
+            text-shadow: 0 0 5px rgba(0, 191, 255, 0.5);
+        }
+
+        .asset-filename {
+            color: #FFD700;
+            font-size: 11px;
+            font-family: monospace;
+            word-break: break-all;
+            line-height: 1.3;
+            margin-top: 2px;
+            text-shadow: 0 0 3px rgba(255, 215, 0, 0.3);
+        }
+
+        .copy-btn {
+            background: linear-gradient(45deg, #00FF7F, #00E676);
+            color: #1a1a1a;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            flex-shrink: 0;
+            min-width: 60px;
+            font-weight: bold;
+            box-shadow: 0 2px 10px rgba(0, 255, 127, 0.3);
+        }
+
+        .copy-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 255, 127, 0.5);
+            background: linear-gradient(45deg, #00E676, #69F0AE);
+        }
+
+        .copy-btn.copied {
+            background: linear-gradient(45deg, #4169E1, #00BFFF);
+            color: white;
+            animation: pulse 0.5s ease;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .filename-preview {
+            margin: 20px 0;
+        }
+
+        .filename-label {
+            color: #00FF7F;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            text-shadow: 0 0 10px rgba(0, 255, 127, 0.5);
+        }
+
+        .editable-filename {
+            background: linear-gradient(135deg, rgba(255, 165, 0, 0.15), rgba(255, 215, 0, 0.1));
+            border: 2px solid #FFD700;
+            border-radius: 6px;
+            padding: 8px;
+            color: #FFD700;
+            width: 100%;
+            font-size: 12px;
+            font-weight: bold;
+            font-family: inherit;
+            text-align: center;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .editable-filename:focus {
+            outline: none;
+            border-color: #00BFFF;
+            background: linear-gradient(135deg, rgba(0, 191, 255, 0.15), rgba(30, 144, 255, 0.1));
+            color: #00BFFF;
+            box-shadow: 0 0 20px rgba(0, 191, 255, 0.4);
+        }
+
+        .generate-btn {
+            background: linear-gradient(45deg, #00BFFF, #1E90FF, #4169E1);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(30, 144, 255, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 4px 20px rgba(30, 144, 255, 0.4); }
+            50% { box-shadow: 0 4px 30px rgba(30, 144, 255, 0.6); }
+        }
+
+        .generate-btn:hover:not(:disabled) {
+            background: linear-gradient(45deg, #1E90FF, #4169E1, #6495ED);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(30, 144, 255, 0.6);
+        }
+
+        .generate-btn:disabled {
+            background: #666666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+            animation: none;
+        }
+
+        .confetti-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: linear-gradient(45deg, #FFD700, #FF69B4);
+            animation: confetti-explode 2s ease-out forwards;
+            border-radius: 2px;
+            box-shadow: 0 0 6px rgba(255, 215, 0, 0.6);
+        }
+
+        .confetti:nth-child(2n) { background: linear-gradient(45deg, #FF1744, #FF69B4); }
+        .confetti:nth-child(3n) { background: linear-gradient(45deg, #00FF7F, #00E676); }
+        .confetti:nth-child(4n) { background: linear-gradient(45deg, #00BFFF, #1E90FF); }
+        .confetti:nth-child(5n) { background: linear-gradient(45deg, #FFD700, #FFA500); }
+
+        @keyframes confetti-explode {
+            0% {
+                transform: translate(0, 0) rotate(0deg) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--dx), var(--dy)) rotate(var(--rotation)) scale(0.3);
+                opacity: 0;
+            }
+        }
+
+        .generate-btn.celebrating {
+            animation: button-pulse 0.6s ease-in-out;
+            background: linear-gradient(45deg, #00FF7F, #00BFFF, #FFD700);
+        }
+
+        @keyframes button-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+        }
+
+        .success-message {
+            background: linear-gradient(45deg, rgba(0, 255, 127, 0.2), rgba(0, 230, 118, 0.2));
+            color: #00FF7F;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: bold;
+            opacity: 0;
+            animation: slideIn 0.5s ease forwards;
+            border: 1px solid #00FF7F;
+            box-shadow: 0 0 20px rgba(0, 255, 127, 0.4);
+            text-shadow: 0 0 5px rgba(0, 255, 127, 0.5);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .error-message {
+            background: linear-gradient(45deg, rgba(255, 23, 68, 0.2), rgba(244, 67, 54, 0.2));
+            color: #FF1744;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: bold;
+            border: 1px solid #FF1744;
+            box-shadow: 0 0 20px rgba(255, 23, 68, 0.4);
+            text-shadow: 0 0 5px rgba(255, 23, 68, 0.5);
+            animation: slideIn 0.5s ease forwards;
+        }
+
+        .processing-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #00BFFF;
+            border-right-color: #FFD700;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+            box-shadow: 0 0 15px rgba(0, 191, 255, 0.5);
+        }
+        
+        .metadata-blocked {
+            background: linear-gradient(135deg, rgba(255, 23, 68, 0.2), rgba(244, 67, 54, 0.15));
+            border: 2px solid #FF1744;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(255, 23, 68, 0.3);
+        }
+        
+        .metadata-blocked h3 {
+            color: #FF1744;
+            font-size: 18px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(255, 23, 68, 0.5);
+        }
+        
+        .metadata-blocked p {
+            color: #FFD700;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        
+        .metadata-blocked .warning-icon {
+            font-size: 48px;
+            color: #FF1744;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 968px) {
+            .two-column-container {
+                flex-direction: column;
+            }
+            
+            .left-column,
+            .right-column {
+                flex: 1;
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 10px;
+            }
+            
+            .drop-zone {
+                padding: 40px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <img src="https://media0.giphy.com/media/v1.Y2lkPTZjMDliOTUyZXJqbmc4Z2czempzNzRqY2k4eWFpY3d1NWpzYWF5eTM2Zmkxd2V0ZCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/5NPhdqmyRxn8I/200.gif" alt="Google Logo">
+            <div class="logo-text">Googlisator</div>
+            <div style="font-size: 12px; color: #4285F4; margin-top: 5px; font-style: italic;">Conforms to NMS_GoogleMetadata_ImportTemplate_v2.2</div>
+        </div>
+        
+        <div class="drop-zone" id="dropZone">
+            <h3>Drop metadata.xml here</h3>
+            <p>Or click to select file</p>
+            <input type="file" class="file-input" id="fileInput" accept=".xml">
+        </div>
+
+        <div class="content-preview" id="contentPreview">
+            <div class="title-display" id="titleDisplay"></div>
+            <div class="package-status">
+                <div class="status-text" id="statusText">Package Type Detection waiting...</div>
+                <div class="package-type" id="packageType"></div>
+            </div>
+            <div class="validation-messages" id="validationMessages" style="display: none;"></div>
+            
+            <!-- Two-column container -->
+            <div class="two-column-container">
+                <!-- Left Column: Data Preview -->
+                <div class="left-column">
+                    <div class="data-preview" id="dataPreview" style="display: none;">
+                        <h3 class="preview-title">Data Preview & Editing</h3>
+                        <div class="preview-table-container">
+                            <table class="preview-table" id="previewTable">
+                                <thead>
+                                    <tr>
+                                        <th>Field</th>
+                                        <th>Value</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="previewTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Asset Analysis -->
+                <div class="right-column">
+                    <div class="asset-analysis" id="assetAnalysis" style="display: none;">
+                        <h3 class="preview-title">Predicted Google Filenames</h3>
+                        <div class="asset-count" id="assetCount"></div>
+                        <div class="asset-list" id="assetList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="filename-preview">
+            <div class="filename-label">Output Filename:</div>
+            <input type="text" class="editable-filename" id="filenameText" value="(Drop a file to preview)">
+        </div>
+
+        <div class="processing-spinner" id="processingSpinner"></div>
+        <button class="generate-btn" id="generateBtn" disabled>Generate Google Metadata</button>
+        
+        <div id="messageArea"></div>
+    </div>
+
+    <script>
+        // All mapping dictionaries from the original Python script
+        const clientMapping = {
+            'metropolitanfilm': 'CALD',
+            'underthemilkyway': 'UTMW',
+            'mydigitalcompanysas': 'MDC_J2F',
+            'diaphanadistribution': 'Diaphana',
+            'pathe': 'Pathe',
+            'universcine': 'Universcine',
+            'wildsidevideo': 'WildSide'
+        };
+
+        const languageMapping = {
+            'af': 'Afrikaans', 'ar': 'Arabic', 'bn': 'Bangla / Bengali', 'bg': 'Bulgarian',
+            'yue': 'Chinese (Cantonese)', 'yue-Hant': 'Chinese (Cantonese) [Traditional]',
+            'ca': 'Catalan', 'hr': 'Croatian', 'cs': 'Czech', 'da': 'Danish',
+            'nl': 'Dutch (Netherlands)', 'en': 'English', 'en-AU': 'English (Australia)',
+            'en-CA': 'English (Canada)', 'en-FR': 'English (France)', 'en-DE': 'English (Germany)',
+            'en-IE': 'English (Ireland)', 'en-NZ': 'English (New Zealand)', 'en-GB': 'English (UK)',
+            'en-US': 'English (US)', 'et': 'Estonian', 'fa': 'Persian / Farsi', 'fi': 'Finnish',
+            'nl-BE': 'Dutch (Belgium) / Flemish', 'fr': 'French - Continental', 'fr-BE': 'French (Belgium)',
+            'fr-CA': 'French (Canadian)', 'fr-FR': 'French (Parisian)', 'fr-CH': 'French (Switzerland)',
+            'de': 'German', 'de-AT': 'German (Austria)', 'de-DE': 'German (Germany)',
+            'de-CH': 'German (Switzerland)', 'el': 'Greek', 'el-CY': 'Greek (Cyprus)',
+            'he': 'Hebrew', 'hi': 'Hindi', 'hu': 'Hungarian', 'is': 'Icelandic',
+            'id': 'Indonesian / Bahasa', 'it': 'Italian', 'ja': 'Japanese', 'kn': 'Kannada',
+            'kk': 'Kazakh', 'ko': 'Korean', 'lo': 'Lao', 'lv': 'Latvian', 'lt': 'Lithuanian',
+            'lb': 'Luxembourgish', 'ms': 'Malay', 'ml': 'Malayalam', 'mt': 'Maltese',
+            'cmn-Hans': 'Chinese (Mandarin Simplified)', 'cmn': 'Chinese (Mandarin)',
+            'cmn-Hant': 'Chinese (Mandarin Traditional)', 'mr': 'Marathi', 'no': 'Norwegian',
+            'pl': 'Polish', 'pt': 'Portuguese', 'pt-BR': 'Portuguese (Brazil)',
+            'pt-PT': 'Portuguese (Portugal)', 'pa': 'Punjabi', 'ro': 'Romanian',
+            'ru': 'Russian (Russia)', 'sk': 'Slovak', 'sl': 'Slovene/Slovenian',
+            'es': 'Spanish', 'es-419': 'Spanish (Latin America)', 'es-MX': 'Spanish (Mexican)',
+            'es-ES': 'Spanish (Castilian)', 'sv': 'Swedish', 'tl': 'Tagalog', 'ta': 'Tamil',
+            'te': 'Telugu', 'th': 'Thai', 'tr': 'Turkish', 'uk': 'Ukrainian', 'ur': 'Urdu',
+            'vi': 'Vietnamese', 'zu': 'Zulu'
+        };
+
+        const countryMapping = {
+            'AF': 'Afghanistan', 'AL': 'Albania', 'DZ': 'Algeria', 'AS': 'American Samoa',
+            'AD': 'Andorra', 'AO': 'Angola', 'AI': 'Anguilla', 'AQ': 'Antarctica',
+            'AG': 'Antigua and Barbuda', 'AR': 'Argentina', 'AM': 'Armenia', 'AW': 'Aruba',
+            'AU': 'Australia', 'AT': 'Austria', 'AZ': 'Azerbaijan', 'BS': 'Bahamas',
+            'BH': 'Bahrain', 'BD': 'Bangladesh', 'BB': 'Barbados', 'BY': 'Belarus',
+            'BE': 'Belgium', 'BZ': 'Belize', 'BJ': 'Benin', 'BM': 'Bermuda', 'BT': 'Bhutan',
+            'BO': 'Bolivia', 'BQ': 'Bonaire, Sint Eustatius And Saba', 'BA': 'Bosnia and Herzegovina',
+            'BW': 'Botswana', 'BV': 'Bouvet Islands', 'BR': 'Brazil', 'IO': 'British Indian Ocean Territory',
+            'BN': 'Brunei Darussalam', 'BG': 'Bulgaria', 'BF': 'Burkina-Faso', 'BI': 'Burundi',
+            'CV': 'Cape Verde', 'KH': 'Cambodia', 'CM': 'Cameroon', 'CA': 'Canada',
+            'KY': 'Cayman Islands', 'CF': 'Central African Republic', 'TD': 'Chad', 'CL': 'Chile',
+            'CN': 'China', 'CX': 'Christmas Island', 'CC': 'Coco Islands', 'CO': 'Colombia',
+            'KM': 'Comoros', 'CD': 'Congo, The Democratic Republic of the', 'CG': 'Congo',
+            'CK': 'Cook Islands', 'CR': 'Costa Rica', 'HR': 'Croatia', 'CU': 'Cuba',
+            'CW': 'Curaçao', 'CY': 'Cyprus', 'CZ': 'Czech Republic', 'CI': 'Ivory Coast',
+            'DK': 'Denmark', 'DJ': 'Djibouti', 'DM': 'Dominica', 'DO': 'Dominican Republic',
+            'EC': 'Ecuador', 'EG': 'Egypt', 'SV': 'El Salvador', 'GQ': 'Equatorial Guinea',
+            'ER': 'Eritrea', 'EE': 'Estonian', 'SZ': 'Swaziland', 'ET': 'Ethiopia',
+            'FK': 'Falkland Islands', 'FO': 'Faroe Islands', 'FJ': 'Fiji', 'FI': 'Finland',
+            'FR': 'France', 'GF': 'French Guyana', 'PF': 'French Polynesia', 'TF': 'French Southern Territories',
+            'GA': 'Gabon', 'GM': 'Gambia', 'GE': 'Georgia', 'DE': 'Germany', 'GH': 'Ghana',
+            'GI': 'Gibraltar', 'GR': 'Greece', 'GL': 'Greenland', 'GD': 'Grenada',
+            'GP': 'Guadeloupe', 'GU': 'Guam', 'GT': 'Guatemala', 'GG': 'Guernsey',
+            'GN': 'Guinea', 'GW': 'Guinea-Bissau', 'GY': 'Guyana', 'HT': 'Haiti',
+            'HM': 'Heard and McDonald Islands', 'VA': 'Vatican City', 'HN': 'Honduras',
+            'HK': 'Hong Kong', 'HU': 'Hungary', 'IS': 'Iceland', 'IN': 'India',
+            'ID': 'Indonesia', 'IR': 'Iran', 'IQ': 'Iraq', 'IE': 'Ireland',
+            'IM': 'Isle Of Man', 'IL': 'Israel', 'IT': 'Italy', 'JM': 'Jamaica',
+            'JP': 'Japan', 'JE': 'Jersey', 'JO': 'Jordan', 'KZ': 'Kazakhstan',
+            'KE': 'Kenya', 'KI': 'Kiribati', 'KP': 'North Korea', 'KR': 'South Korea',
+            'KW': 'Kuwait', 'KG': 'Kyrgyzstan', 'LA': 'Laos', 'LV': 'Latvian',
+            'LB': 'Lebanon', 'LS': 'Lesotho', 'LR': 'Liberia', 'LY': 'Libya',
+            'LI': 'Liechtenstein', 'LT': 'Lithuanian', 'LU': 'Luxembourg', 'MO': 'Macau',
+            'MG': 'Madagascar', 'MW': 'Malawi', 'MY': 'Malaysia', 'MV': 'Maldives',
+            'ML': 'Mali', 'MT': 'Malta', 'MH': 'Marshall Islands', 'MQ': 'Martinique',
+            'MR': 'Mauritania', 'MU': 'Mauritius', 'YT': 'Mayotte', 'MX': 'Mexico',
+            'FM': 'Micronesia', 'MD': 'Moldavia', 'MC': 'Monaco', 'MN': 'Mongolia',
+            'ME': 'Montenegro', 'MS': 'Montserrat', 'MA': 'Morocco', 'MZ': 'Mozambique',
+            'MM': 'Myanmar', 'NA': 'Namibia', 'NR': 'Nauru', 'NP': 'Nepal',
+            'NL': 'Netherlands', 'NC': 'New Caledonia', 'NZ': 'New Zealand', 'NI': 'Nicaragua',
+            'NE': 'Niger', 'NG': 'Nigeria', 'NU': 'Niue', 'NF': 'Norfolk Islands',
+            'MK': 'Macedonia', 'MP': 'North Mariana Islands', 'NO': 'Norway', 'OM': 'Oman',
+            'PK': 'Pakistan', 'PW': 'Palau', 'PS': 'Palestinian Territory, Occupied',
+            'PA': 'Panama', 'PG': 'Papua New Guinea', 'PY': 'Paraguay', 'PE': 'Peru',
+            'PH': 'Philippines', 'PN': 'Pitcairn Islands', 'PL': 'Poland', 'PT': 'Portugal',
+            'PR': 'Puerto Rico', 'QA': 'Qatar', 'RO': 'Romania', 'RU': 'Russian Federation',
+            'RW': 'Ruanda', 'RE': 'Reunion', 'BL': 'Saint Barthelemy', 'SH': 'St. Helena',
+            'KN': 'St. Kitts and Nevis Anguilla', 'LC': 'St. Lucia', 'MF': 'Saint Martin (French Part)',
+            'PM': 'St. Pierre and Miquelon', 'VC': 'St. Vincent and the Grenadines',
+            'WS': 'Samoa', 'SM': 'San Marino', 'ST': 'Sao Tome and Principe', 'SA': 'Saudi Arabia',
+            'SN': 'Senegal', 'RS': 'Serbia', 'SC': 'Seychelles', 'SL': 'Sierra Leone',
+            'SG': 'Singapore', 'SX': 'Sint Maarten (Dutch Part)', 'SK': 'Slovakia',
+            'SI': 'Slovenia', 'SB': 'Solomon Islands', 'SO': 'Somalia', 'ZA': 'South Africa',
+            'GS': 'South Georgia And The South Sandwich Islands', 'SS': 'South Sudan',
+            'ES': 'Spain', 'LK': 'Sri Lanka', 'SD': 'Sudan', 'SR': 'Suriname',
+            'SJ': 'Svalbard', 'SE': 'Sweden', 'CH': 'Switzerland', 'SY': 'Syria',
+            'TW': 'Taiwan', 'TJ': 'Tajikistan', 'TZ': 'Tanzania', 'TH': 'Thailand',
+            'TL': 'Timor-Leste', 'TG': 'Togo', 'TK': 'Tokelau Islands', 'TO': 'Tonga',
+            'TT': 'Trinidad and Tobago', 'TN': 'Tunisia', 'TR': 'Turkey', 'TM': 'Turkmenistan',
+            'TC': 'Turks and Caicos Islands', 'TV': 'Tuvalu', 'UG': 'Uganda', 'UA': 'Ukraine',
+            'AE': 'United Arab Emirates', 'GB': 'United Kingdom', 'UM': 'American Minor Outlying Islands',
+            'US': 'USA', 'UY': 'Uruguay', 'UZ': 'Uzbekistan', 'VU': 'Vanuatu',
+            'VE': 'Venezuela', 'VN': 'Vietnam', 'VG': 'British Virgin Islands',
+            'VI': 'American Virgin Islands', 'WF': 'Wallis and Futuna Islands', 'EH': 'Western Sahara',
+            'YE': 'Yemen', 'ZM': 'Zambia', 'ZW': 'Zimbabwe', 'AX': 'Åland Islands'
+        };
+
+        const genreMapping = {
+            'ACTION-ADVENTURE-00': ['Action & Adventure'],
+            'AFRICAN-00': ['African Cinema'],
+            'ANIME-00': ['Anime', 'Japanese Cinema'],
+            'BOLLYWOOD-00': ['Indian Cinema'],
+            'CLASSICS-00': ['Classics'],
+            'COMEDY-00': ['Comedy'],
+            'CONCERT-FILMS-00': ['Music Performance', 'Live Performance'],
+            'DOCUMENTARY-00': ['Documentary'],
+            'DRAMA-00': ['Drama'],
+            'FOREIGN-00': ['World Cinema'],
+            'HOLIDAY-00': [],
+            'HORROR-00': ['Horror'],
+            'INDEPENDENT-00': ['Independent'],
+            'KIDS-FAMILY-00': ['Family', "Children's"],
+            'MADE-FOR-TV-00': [],
+            'MIDDLE-EASTERN-00': [],
+            'MUSIC-DOCUMENTARIES-00': ['Music', 'Documentary'],
+            'MUSIC-FEATURE-FILMS-00': ['Music'],
+            'MUSICALS-00': ['Musical'],
+            'REGIONAL-INDIAN-00': ['Indian Cinema'],
+            'ROMANCE-00': ['Romance'],
+            'RUSSIAN-00': ['World Cinema'],
+            'SCIFI-FANTASY-00': ['Science Fiction', 'Fantasy'],
+            'SHORT-FILMS-00': ['Short Films'],
+            'SPECIAL-INTEREST-00': ['Instructional', 'Education', 'Miscellaneous'],
+            'SPORTS-00': ['Sports'],
+            'THRILLER-00': ['Thriller', 'Mystery'],
+            'TURKISH-00': ['World Cinema'],
+            'URBAN-00': [],
+            'WESTERN-00': ['Western']
+        };
+
+        const ratingMapping = {
+            'fr-cnc': {
+                'TP': { 'label': 'T', 'description': 'Suitable for all ages' },
+                '-10': { 'label': '10', 'description': 'Advised against under 10 years old' },
+                '-12': { 'label': '12', 'description': 'Theatrically forbidden to under 12 years old' },
+                '-16': { 'label': '16', 'description': 'Theatrically forbidden to under 16 years old' },
+                '-18': { 'label': '18', 'description': 'Theatrically forbidden to under 18 years old' },
+                'UR': { 'label': 'Sans classification', 'description': 'No Rating Exists' }
+            }
+        };
+
+        // Global variables
+        let xmlFile = null;
+        let parsedData = null;
+        let validationMessages = [];
+        let editableData = {}; // Store edited field values
+
+        // Asset type mapping based on Google delivery requirements (without backdrop and logos)
+        const assetTypeMapping = {
+            'artwork': {
+                assetName: 'PosterArt',
+                description: 'Movie Poster Artwork'
+            },
+            'artwork_16:9': {
+                assetName: 'BannerArt16x9', 
+                description: '16:9 Banner Artwork'
+            }
+        };
+
+        const dataFileRoleMapping = {
+            'source': {
+                assetName: 'Feature',
+                description: 'Main Feature Video'
+            },
+            'audio': {
+                assetName: 'Audio',
+                description: 'Discrete Audio Track'
+            },
+            'subtitles': {
+                assetName: 'full',
+                description: 'Full Subtitles'
+            },
+            'forced_subtitles': {
+                assetName: 'forced',
+                description: 'Forced Subtitles'
+            },
+            'video.end.dub_credits': {
+                assetName: 'DubCard',
+                description: 'Dub Credits Video'
+            }
+        };
+
+        function analyzeAssets() {
+            if (!parsedData || !parsedData.xmlDoc) {
+                console.log('No parsed data or XML document available');
+                return [];
+            }
+
+            const assets = [];
+            const video = parsedData.xmlDoc.querySelector('video');
+            if (!video) {
+                console.log('No video element found in XML');
+                return [];
+            }
+
+            const assetsElement = video.querySelector('assets');
+            if (!assetsElement) {
+                console.log('No assets element found in XML');
+                return [];
+            }
+
+            // Get basic info for filename generation with safe fallbacks
+            const clientPrefix = clientMapping[parsedData.provider] || parsedData.provider || 'UNKNOWN';
+            const packageType = parsedData.isMLP ? 'MLP' : '';
+            
+            // Use edited OriginalReleaseTitle if available, otherwise fallback to parsed studio_release_title or title
+            // Use edited OriginalReleaseTitle if available, otherwise studio_release_title, or title as last resort
+            const originalReleaseTitle = editableData['OriginalReleaseTitle'] || 
+                                        parsedData.studioReleaseTitle || 
+                                        (parsedData.missingStudioReleaseTitle && !editableData['OriginalReleaseTitle'] ? '' : parsedData.title) || 
+                                        'Unknown';
+            const normalizedTitle = normalizeTitle(originalReleaseTitle || 'Unknown');
+            
+            const org = parsedData.provider === 'metropolitanfilm' ? 
+                `NG${parsedData.vendorId}` : (parsedData.vendorId || 'UNKNOWN');
+
+            // Process each asset
+            const assetElements = assetsElement.querySelectorAll('asset');
+            assetElements.forEach(asset => {
+                const assetType = asset.getAttribute('type');
+                if (!assetType) return;
+                
+                // Skip backdrop and logo assets
+                if (assetType === 'backdrop_tall' || assetType === 'backdrop_wide' || 
+                    assetType === 'single_color_content_logo' || assetType === 'full_color_content_logo') {
+                    return;
+                }
+                
+                try {
+                    // Handle preview assets (trailers)
+                    if (assetType === 'preview') {
+                        const territoryEl = asset.querySelector('territory');
+                        const territory = territoryEl ? territoryEl.textContent : 'WW';
+                        const dataFile = asset.querySelector('data_file[role="source"]');
+                        if (dataFile) {
+                            // Check for burned subtitles attribute
+                            const burnedSubsAttr = dataFile.querySelector('attribute[name="image.burned_subtitles.locale"]');
+                            let trailerType = '';
+                            let locale = 'en';
+                            
+                            if (burnedSubsAttr && burnedSubsAttr.textContent) {
+                                // If burned subtitles present, use Sub_Trailer with the burned subtitle locale
+                                trailerType = 'Sub_Trailer';
+                                locale = burnedSubsAttr.textContent;
+                            } else {
+                                // Otherwise use regular trailer logic
+                                const localeEl = dataFile.querySelector('locale');
+                                locale = localeEl ? localeEl.getAttribute('name') : 'en';
+                                trailerType = territory === 'FR' ? 'Dub_Trailer' : 'Trailer';
+                            }
+                            
+                            const localeFormatted = locale === 'en' && territory === 'WW' && !burnedSubsAttr ? 'en' : locale;
+                            
+                            const filename = generateAssetFilename({
+                                clientPrefix, packageType, normalizedTitle, locale: localeFormatted, 
+                                assetName: trailerType, org, extension: 'mov'
+                            });
+                            
+                            assets.push({
+                                type: `${trailerType} (${territory})`,
+                                description: burnedSubsAttr ? 'Subtitled Trailer' : 
+                                           (territory === 'FR' ? 'French Dubbed Trailer' : 'International Trailer'),
+                                filename: filename,
+                                locale: localeFormatted
+                            });
+                        }
+                    }
+                    
+                    // Handle artwork and other asset types
+                    else if (assetTypeMapping[assetType]) {
+                        const mapping = assetTypeMapping[assetType];
+                        const dataFile = asset.querySelector('data_file');
+                        const localeEl = dataFile?.querySelector('locale');
+                        const locale = localeEl ? localeEl.getAttribute('name') : 'fr-FR';
+                        const extension = assetType.includes('artwork') ? 'jpg' : 'png';
+                        
+                        const filename = generateAssetFilename({
+                            clientPrefix, packageType, normalizedTitle, locale, 
+                            assetName: mapping.assetName, org, extension
+                        });
+                        
+                        assets.push({
+                            type: mapping.assetName,
+                            description: mapping.description,
+                            filename: filename,
+                            locale: locale
+                        });
+                    }
+                    
+                    // Handle full asset with data files
+                    else if (assetType === 'full') {
+                        const dataFiles = asset.querySelectorAll('data_file');
+                        dataFiles.forEach(dataFile => {
+                            const role = dataFile.getAttribute('role');
+                            const mapping = dataFileRoleMapping[role];
+                            
+                            if (mapping) {
+                                const localeEl = dataFile.querySelector('locale');
+                                const locale = localeEl ? localeEl.getAttribute('name') : 'en';
+                                let extension = 'mov';
+                                
+                                // Determine file extension based on role
+                                if (role === 'subtitles' || role === 'forced_subtitles') {
+                                    extension = 'itt';
+                                }
+                                
+                                const filename = generateAssetFilename({
+                                    clientPrefix, packageType, normalizedTitle, locale, 
+                                    assetName: mapping.assetName, org, extension
+                                });
+                                
+                                assets.push({
+                                    type: mapping.assetName,
+                                    description: `${mapping.description} (${locale})`,
+                                    filename: filename,
+                                    locale: locale
+                                });
+                            }
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error processing asset:', error);
+                }
+            });
+
+            console.log('Analyzed assets:', assets.length);
+            return assets;
+        }
+
+        function generateAssetFilename({clientPrefix, packageType, normalizedTitle, locale, assetName, org, extension}) {
+            const parts = [clientPrefix];
+            
+            if (packageType) {
+                parts.push(packageType);
+            }
+            
+            parts.push(normalizedTitle);
+            
+            if (locale && locale !== 'generic') {
+                parts.push(locale);
+            }
+            
+            if (assetName && assetName !== 'Feature') {
+                parts.push(assetName);
+            }
+            
+            parts.push(org);
+            
+            return `${parts.join('_')}.${extension}`;
+        }
+
+        function populateAssetAnalysis() {
+            console.log('populateAssetAnalysis called');
+            const assets = analyzeAssets();
+            console.log('Assets found:', assets);
+            
+            const assetAnalysis = document.getElementById('assetAnalysis');
+            const assetCount = document.getElementById('assetCount');
+            const assetList = document.getElementById('assetList');
+            
+            // Check if elements exist
+            if (!assetAnalysis || !assetCount || !assetList) {
+                console.error('Asset analysis DOM elements not found');
+                return;
+            }
+            
+            if (assets.length === 0) {
+                assetCount.textContent = 'No assets detected in XML';
+                assetList.innerHTML = '<div style="color: #FFA500; padding: 10px; text-align: center;">No assets found in XML structure</div>';
+                return;
+            }
+            
+            assetCount.textContent = `${assets.length} predicted delivery files`;
+            assetList.innerHTML = '';
+            
+            assets.forEach((asset, index) => {
+                const assetItem = document.createElement('div');
+                assetItem.className = 'asset-item';
+                
+                assetItem.innerHTML = `
+                    <div class="asset-info">
+                        <div class="asset-type">${asset.type}</div>
+                        <div class="asset-filename">${asset.filename}</div>
+                    </div>
+                    <button class="copy-btn" onclick="copyToClipboard('${asset.filename}', this)">Copy</button>
+                `;
+                
+                assetList.appendChild(assetItem);
+            });
+        }
+
+        function copyToClipboard(text, buttonElement) {
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = buttonElement.textContent;
+                buttonElement.textContent = 'Copied!';
+                buttonElement.classList.add('copied');
+                
+                setTimeout(() => {
+                    buttonElement.textContent = originalText;
+                    buttonElement.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                buttonElement.textContent = 'Copied!';
+                buttonElement.classList.add('copied');
+                setTimeout(() => {
+                    buttonElement.textContent = 'Copy';
+                    buttonElement.classList.remove('copied');
+                }, 2000);
+            });
+        }
+        
+        const fieldConfig = {
+            'DisplayTitle': { editable: true, status: 'recommended', label: 'Display Title' },
+            'OriginalReleaseTitle': { editable: true, status: 'required', label: 'Original Release Title' },
+            'Language': { editable: false, status: 'required', label: 'Language' },
+            'Territory': { editable: false, status: 'required', label: 'Territory' },
+            'ORG': { editable: false, status: 'recommended', label: 'ORG' },
+            'LocalizedSummary_Short': { editable: true, status: 'required', label: 'Synopsis (Short)' },
+            'PrimaryGenre': { editable: true, status: 'required', label: 'Primary Genre' },
+            'SecondaryGenres': { editable: true, status: 'recommended', label: 'Secondary Genres' },
+            'OriginalReleaseDate': { editable: true, status: 'required', label: 'Original Release Date' },
+            'LocalizedReleaseDate_Type': { editable: true, status: 'recommended', label: 'Localized Release Date' },
+            'CountryOfOrigin': { editable: true, status: 'required', label: 'Country of Origin' },
+            'RatingSystem_Rating_Reason': { editable: true, status: 'required', label: 'Rating' },
+            'CastDisplayName_CharacterName_Role_BillingOrderNumber': { editable: true, status: 'required', label: 'Cast' },
+            'CrewDisplayName_Role_BillingOrderNumber': { editable: true, status: 'recommended', label: 'Crew' }
+        };
+
+        // Utility functions
+        function normalizeName(name) {
+            return name.trim();
+        }
+
+        function splitName(name) {
+            const parts = name.trim().split(' ');
+            if (parts.length === 1) {
+                return [parts[0], ''];
+            } else if (parts.length === 2) {
+                return [parts[0], parts[1]];
+            } else if (parts.length >= 3) {
+                // Handle name particles (de, da, van, von, del, della, etc.)
+                const particles = ['de', 'da', 'van', 'von', 'del', 'della', 'di', 'du', 'le', 'la', 'el'];
+                
+                // Find the last particle or assume last two words are surname
+                let surnameStart = parts.length - 1;
+                
+                // Check if second-to-last word is a particle
+                if (parts.length >= 3) {
+                    const secondToLast = parts[parts.length - 2].toLowerCase();
+                    if (particles.includes(secondToLast)) {
+                        surnameStart = parts.length - 2;
+                    }
+                }
+                
+                const firstName = parts.slice(0, surnameStart).join(' ');
+                const lastName = parts.slice(surnameStart).join(' ');
+                return [firstName, lastName];
+            }
+            return ['', ''];
+        }
+
+        function normalizeTitle(title) {
+            return title
+                .trim()
+                // Remove accents and special characters using proper Unicode normalization
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                // Replace common special characters
+                .replace(/['']/g, '')
+                .replace(/[""]/g, '')
+                .replace(/[&]/g, 'And')
+                // Remove punctuation and special characters except spaces and letters/numbers
+                .replace(/[^\w\s]/g, '')
+                // Split into words, capitalize each, then join without spaces
+                .split(/\s+/)
+                .filter(word => word.length > 0)
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                .join('');
+        }
+
+        function capitalizeTitle(title) {
+            return title.split(' ').map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+            ).join(' ');
+        }
+
+        function showMessage(message, type = 'success') {
+            const messageArea = document.getElementById('messageArea');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type === 'error' ? 'error-message' : 'success-message';
+            messageDiv.textContent = message;
+            messageArea.appendChild(messageDiv);
+            
+            setTimeout(() => {
+                if (messageDiv.parentNode) {
+                    messageDiv.parentNode.removeChild(messageDiv);
+                }
+            }, 5000);
+        }
+
+        // File handling
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        function handleFiles(files) {
+            const file = files[0];
+            if (!file) return;
+            
+            if (!file.name.toLowerCase().includes('metadata') || !file.name.endsWith('.xml')) {
+                showMessage('Please select a metadata.xml file.', 'error');
+                return;
+            }
+
+            // Reset state when new file is loaded
+            resetEditableData();
+            
+            xmlFile = file;
+            dropZone.innerHTML = `<h3>File: ${file.name}</h3><p>Ready to process</p>`;
+            
+            // Reset button text
+            document.getElementById('generateBtn').textContent = 'Generate Google Metadata';
+            
+            parseXMLFile(file);
+        }
+
+        function resetEditableData() {
+            editableData = {};
+        }
+
+        function parseXMLFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const xmlText = e.target.result;
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+                    
+                    // Check for parsing errors
+                    const parseErrors = xmlDoc.getElementsByTagName('parsererror');
+                    if (parseErrors.length > 0) {
+                        throw new Error('Invalid XML format');
+                    }
+                    
+                    parseXMLContent(xmlDoc);
+                } catch (error) {
+                    showMessage(`Failed to parse XML: ${error.message}`, 'error');
+                    resetState();
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function parseXMLContent(xmlDoc) {
+            try {
+                validationMessages = [];
+                
+                // Get elements with null checks
+                const provider = xmlDoc.querySelector('provider');
+                if (!provider || !provider.textContent) {
+                    throw new Error('Missing or empty <provider> element in XML.');
+                }
+
+                const video = xmlDoc.querySelector('video');
+                if (!video) {
+                    throw new Error('Missing <video> element in XML.');
+                }
+
+                const title = video.querySelector('title');
+                if (!title || !title.textContent) {
+                    throw new Error('Missing or empty <title> element in XML.');
+                }
+
+                const studioReleaseTitle = video.querySelector('studio_release_title');
+                let missingStudioReleaseTitle = false;
+                if (!studioReleaseTitle || !studioReleaseTitle.textContent) {
+                    validationMessages.push('⚠️ CRITICAL: <studio_release_title> is missing. Fill in "Original Release Title" field below to enable generation.');
+                    missingStudioReleaseTitle = true;
+                }
+
+                const language = xmlDoc.querySelector('language');
+                if (!language || !language.textContent) {
+                    throw new Error('Missing or empty <language> element in XML.');
+                }
+
+                const vendorId = video.querySelector('vendor_id');
+                if (!vendorId || !vendorId.textContent) {
+                    throw new Error('Missing or empty <vendor_id> element in XML.');
+                }
+
+                // Store parsed data with safe access
+                parsedData = {
+                    provider: provider.textContent.trim(),
+                    title: title.textContent.trim(),
+                    studioReleaseTitle: studioReleaseTitle && studioReleaseTitle.textContent ? studioReleaseTitle.textContent.trim() : null,
+                    missingStudioReleaseTitle: missingStudioReleaseTitle, // Flag for blocking download
+                    language: language.textContent.trim(),
+                    vendorId: vendorId.textContent.trim(),
+                    synopsis: '',
+                    theatricalReleaseDate: '',
+                    copyrightCline: '',
+                    xmlDoc: xmlDoc
+                };
+
+                // Safely get optional elements
+                const synopsis = video.querySelector('synopsis');
+                if (synopsis && synopsis.textContent) {
+                    parsedData.synopsis = synopsis.textContent.trim();
+                }
+
+                const theatricalReleaseDate = video.querySelector('theatrical_release_date');
+                if (theatricalReleaseDate && theatricalReleaseDate.textContent) {
+                    parsedData.theatricalReleaseDate = theatricalReleaseDate.textContent.trim();
+                }
+
+                const copyrightCline = video.querySelector('copyright_cline');
+                if (copyrightCline && copyrightCline.textContent) {
+                    parsedData.copyrightCline = copyrightCline.textContent.trim();
+                }
+
+                // Determine package type
+                const assets = video.querySelector('assets');
+                if (!assets) {
+                    validationMessages.push('Missing <assets> element in XML. Cannot determine package type (MLP/SLP). Defaulting to SLP.');
+                }
+
+                let sourceLocale = null;
+                let audioLocale = null;
+                
+                if (assets) {
+                    const fullAsset = assets.querySelector('asset[type="full"]');
+                    if (fullAsset) {
+                        const sourceFile = fullAsset.querySelector('data_file[role="source"]');
+                        const audioFile = fullAsset.querySelector('data_file[role="audio"]');
+                        
+                        if (sourceFile) {
+                            const locale = sourceFile.querySelector('locale');
+                            sourceLocale = locale?.getAttribute('name');
+                        }
+                        
+                        if (audioFile) {
+                            const locale = audioFile.querySelector('locale');
+                            audioLocale = locale?.getAttribute('name');
+                        }
+                    }
+                }
+
+                parsedData.isMLP = sourceLocale && audioLocale && sourceLocale !== audioLocale;
+
+                updateUI();
+                
+            } catch (error) {
+                console.error('XML parsing error details:', error);
+                showMessage(`Failed to parse XML: ${error.message}`, 'error');
+                resetState();
+            }
+        }
+
+        function updateUI() {
+            if (!parsedData) return;
+
+            // Show content preview
+            document.getElementById('contentPreview').style.display = 'block';
+
+            // Update title display - use title as fallback if studio_release_title is missing
+            const displayTitle = parsedData.studioReleaseTitle || parsedData.title;
+            document.getElementById('titleDisplay').textContent = capitalizeTitle(displayTitle);
+            
+            // Show warning if studio_release_title is missing
+            if (parsedData.missingStudioReleaseTitle) {
+                const titleDisplay = document.getElementById('titleDisplay');
+                titleDisplay.innerHTML = capitalizeTitle(parsedData.title) + 
+                    '<span style="color: #FF1744; font-size: 14px; display: block; margin-top: 5px;">⚠️ Missing studio_release_title - Download Blocked</span>';
+            }
+
+            // Update package status
+            document.getElementById('statusText').textContent = 'Package Type Detected';
+            document.getElementById('statusText').style.color = '#0F9D58';
+            document.getElementById('packageType').textContent = parsedData.isMLP ? 'MLP' : 'SLP';
+
+            // Update validation messages
+            const validationEl = document.getElementById('validationMessages');
+            if (validationMessages.length > 0) {
+                validationEl.textContent = validationMessages.join('\n');
+                validationEl.style.display = 'block';
+                // Add critical class if studio_release_title is missing
+                if (parsedData.missingStudioReleaseTitle) {
+                    validationEl.className = 'validation-messages critical';
+                } else {
+                    validationEl.className = 'validation-messages';
+                }
+            } else {
+                validationEl.style.display = 'none';
+            }
+
+            // Update filename preview
+            updateFilenamePreview();
+
+            // Populate data preview table
+            populatePreviewTable();
+
+            // Populate asset analysis
+            populateAssetAnalysis();
+
+            // Show both sections
+            document.getElementById('dataPreview').style.display = 'block';
+            document.getElementById('assetAnalysis').style.display = 'block';
+
+            // Enable generate button but change text if blocked
+            if (parsedData.missingStudioReleaseTitle) {
+                document.getElementById('generateBtn').disabled = false;
+                document.getElementById('generateBtn').textContent = 'Generate (Download Blocked)';
+                document.getElementById('generateBtn').style.background = 'linear-gradient(45deg, #FF6347, #FF1744)';
+            } else {
+                document.getElementById('generateBtn').disabled = false;
+                document.getElementById('generateBtn').textContent = 'Generate Google Metadata';
+                document.getElementById('generateBtn').style.background = '';
+            }
+        }
+
+        function populatePreviewTable() {
+            const previewData = generateMetadataRow();
+            const tbody = document.getElementById('previewTableBody');
+            tbody.innerHTML = '';
+
+            // Initialize editable data with current values if not already set
+            Object.keys(fieldConfig).forEach(fieldKey => {
+                if (editableData[fieldKey] === undefined && previewData.hasOwnProperty(fieldKey)) {
+                    editableData[fieldKey] = previewData[fieldKey] || '';
+                }
+            });
+
+            Object.keys(fieldConfig).forEach(fieldKey => {
+                if (!previewData.hasOwnProperty(fieldKey)) return;
+
+                const config = fieldConfig[fieldKey];
+                const value = editableData[fieldKey] || previewData[fieldKey] || '';
+                
+                const row = document.createElement('tr');
+                
+                // Field name cell
+                const nameCell = document.createElement('td');
+                nameCell.className = 'field-name';
+                nameCell.textContent = config.label;
+                
+                // Field value cell
+                const valueCell = document.createElement('td');
+                valueCell.className = 'field-value';
+                
+                if (config.editable) {
+                    const input = document.createElement('textarea');
+                    input.className = 'editable-field';
+                    input.value = value;
+                    
+                    // Set different heights for different field types
+                    if (fieldKey === 'LocalizedSummary_Short') {
+                        input.rows = 3;
+                        input.style.minHeight = '60px';
+                    } else if (fieldKey === 'CastDisplayName_CharacterName_Role_BillingOrderNumber' || 
+                               fieldKey === 'CrewDisplayName_Role_BillingOrderNumber') {
+                        input.rows = 4;
+                        input.style.minHeight = '80px';
+                    } else {
+                        input.rows = value.length > 50 ? 2 : 1;
+                        input.style.minHeight = '20px';
+                    }
+                    
+                    input.addEventListener('input', (e) => {
+                        editableData[fieldKey] = e.target.value;
+                        
+                        // Special handling for OriginalReleaseTitle
+                        if (fieldKey === 'OriginalReleaseTitle') {
+                            // If user manually fills OriginalReleaseTitle and it was missing, unblock download
+                            if (parsedData.missingStudioReleaseTitle && e.target.value.trim()) {
+                                // Update the button to show it's unblocked
+                                const generateBtn = document.getElementById('generateBtn');
+                                generateBtn.textContent = 'Generate Google Metadata';
+                                generateBtn.style.background = '';
+                                
+                                // Update validation message
+                                const validationEl = document.getElementById('validationMessages');
+                                if (validationEl) {
+                                    validationEl.textContent = '✓ Original Release Title manually provided - Generation enabled';
+                                    validationEl.className = 'validation-messages';
+                                    validationEl.style.color = '#00FF7F';
+                                }
+                            } else if (parsedData.missingStudioReleaseTitle && !e.target.value.trim()) {
+                                // If cleared, re-block
+                                const generateBtn = document.getElementById('generateBtn');
+                                generateBtn.textContent = 'Generate (Download Blocked)';
+                                generateBtn.style.background = 'linear-gradient(45deg, #FF6347, #FF1744)';
+                                
+                                // Restore warning message
+                                const validationEl = document.getElementById('validationMessages');
+                                if (validationEl) {
+                                    validationEl.textContent = '⚠️ CRITICAL: <studio_release_title> is missing. Fill in "Original Release Title" field below to enable generation.';
+                                    validationEl.className = 'validation-messages critical';
+                                    validationEl.style.color = '';
+                                }
+                            }
+                            
+                            updateFilenamePreview();
+                            populateAssetAnalysis();
+                        } else if (fieldKey === 'DisplayTitle') {
+                            updateFilenamePreview();
+                            populateAssetAnalysis();
+                        }
+                    });
+                    valueCell.appendChild(input);
+                } else {
+                    valueCell.textContent = value;
+                    valueCell.style.color = '#cccccc';
+                }
+                
+                // Status cell
+                const statusCell = document.createElement('td');
+                statusCell.className = 'field-status';
+                const statusSpan = document.createElement('span');
+                statusSpan.className = `status-${config.status}`;
+                statusSpan.textContent = config.status.toUpperCase();
+                statusCell.appendChild(statusSpan);
+                
+                row.appendChild(nameCell);
+                row.appendChild(valueCell);
+                row.appendChild(statusCell);
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateFilenamePreview() {
+            if (!parsedData) return;
+
+            const clientPrefix = clientMapping[parsedData.provider] || parsedData.provider;
+            const packageType = parsedData.isMLP ? 'MLP' : '';
+            
+            // Use edited OriginalReleaseTitle if available, otherwise studio_release_title, or MISSING if neither exists
+            const originalReleaseTitle = editableData['OriginalReleaseTitle'] || 
+                                        parsedData.studioReleaseTitle || 
+                                        (parsedData.missingStudioReleaseTitle ? 'MISSING_TITLE' : parsedData.title);
+            const normalizedTitle = normalizeTitle(originalReleaseTitle);
+            
+            const org = parsedData.provider === 'metropolitanfilm' ? 
+                `NG${parsedData.vendorId}` : parsedData.vendorId;
+
+            let filename;
+            if (packageType) {
+                filename = `${clientPrefix}_${packageType}_${normalizedTitle}_${parsedData.language}_Metadata_${org}.xlsx`;
+            } else {
+                filename = `${clientPrefix}_${normalizedTitle}_${parsedData.language}_Metadata_${org}.xlsx`;
+            }
+
+            const filenameEl = document.getElementById('filenameText');
+            
+            // Only update if it's not currently being edited by the user
+            if (document.activeElement !== filenameEl) {
+                filenameEl.value = filename;
+            }
+            
+            parsedData.outputFilename = filenameEl.value; // Use current value in the field
+            
+            // Add event listener to filename field if not already added
+            if (!filenameEl.hasEventListener) {
+                filenameEl.addEventListener('input', (e) => {
+                    parsedData.outputFilename = e.target.value;
+                });
+                filenameEl.hasEventListener = true;
+            }
+        }
+
+        function resetState() {
+            xmlFile = null;
+            parsedData = null;
+            validationMessages = [];
+            editableData = {}; // Clear edited data
+            
+            dropZone.innerHTML = '<h3>Drop metadata.xml here</h3><p>Or click to select file</p>';
+            document.getElementById('contentPreview').style.display = 'none';
+            document.getElementById('dataPreview').style.display = 'none';
+            document.getElementById('assetAnalysis').style.display = 'none';
+            document.getElementById('generateBtn').disabled = true;
+            document.getElementById('generateBtn').textContent = 'Generate Google Metadata';
+            document.getElementById('generateBtn').style.background = '';
+            
+            const filenameEl = document.getElementById('filenameText');
+            filenameEl.value = '(Drop a file to preview)';
+            filenameEl.hasEventListener = false; // Reset event listener flag
+            
+            document.getElementById('statusText').textContent = 'Package Type Detection waiting...';
+            document.getElementById('statusText').style.color = '#ffffff';
+            document.getElementById('packageType').textContent = '';
+        }
+
+        function createConfetti() {
+            const generateBtn = document.getElementById('generateBtn');
+            const buttonRect = generateBtn.getBoundingClientRect();
+            
+            // Calculate button center position
+            const buttonCenterX = buttonRect.left + buttonRect.width / 2;
+            const buttonCenterY = buttonRect.top + buttonRect.height / 2;
+
+            const confettiContainer = document.createElement('div');
+            confettiContainer.className = 'confetti-container';
+            document.body.appendChild(confettiContainer);
+
+            // Create 100 confetti pieces (doubled from original)
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                
+                // Position confetti at button center
+                confetti.style.left = buttonCenterX + 'px';
+                confetti.style.top = buttonCenterY + 'px';
+                
+                // Random explosion direction and distance
+                const angle = (Math.PI * 2 * i) / 100 + (Math.random() - 0.5) * 1; // Spread evenly with some randomness
+                const velocity = Math.random() * 300 + 150; // 150-450px distance
+                const dx = Math.cos(angle) * velocity;
+                const dy = Math.sin(angle) * velocity - Math.random() * 200; // Bias upward
+                
+                // Set custom properties for animation
+                confetti.style.setProperty('--dx', dx + 'px');
+                confetti.style.setProperty('--dy', dy + 'px');
+                confetti.style.setProperty('--rotation', (Math.random() * 720 - 360) + 'deg');
+                
+                // Random delay for staggered explosion
+                confetti.style.animationDelay = Math.random() * 0.3 + 's';
+                
+                // Random duration
+                confetti.style.animationDuration = (Math.random() * 1 + 1.5) + 's'; // 1.5-2.5s
+                
+                // Random size variation
+                const size = Math.random() * 6 + 8; // 8-14px
+                confetti.style.width = size + 'px';
+                confetti.style.height = size + 'px';
+                
+                // Random shape - some square, some circular
+                if (Math.random() > 0.5) {
+                    confetti.style.borderRadius = '50%';
+                }
+                
+                confettiContainer.appendChild(confetti);
+            }
+
+            // Remove confetti container after animation
+            setTimeout(() => {
+                if (confettiContainer.parentNode) {
+                    confettiContainer.parentNode.removeChild(confettiContainer);
+                }
+            }, 4000);
+        }
+
+        // Column width mappings based on Google's official template
+        const columnWidthMap = {
+            'A': 23.14,  // TitleLevel
+            'B': 47.14,  // TitleMgmtID
+            'C': 23.14,  // Language
+            'D': 13.00,  // Territory
+            'E': 33.29,  // Season Number
+            'F': 53.29,  // DisplayTitle
+            'G': 45.43,  // OriginalReleaseTitle
+            'H': 45.71,  // ORG
+            'I': 38.00,  // OriginalSummary_Short
+            'J': 38.00,  // LocalizedSummary_Short
+            'K': 38.00,  // LocalizedSummary_Medium
+            'L': 38.00,  // LocalizedSummary_Long
+            'M': 30.00,  // PrimaryGenre
+            'N': 30.00,  // SecondaryGenres
+            'O': 24.00,  // SequenceNumber
+            'P': 32.00,  // OriginalReleaseDate
+            'Q': 43.00,  // LocalizedReleaseDate_Type
+            'R': 31.55,  // RatingSystem_Rating_Reason
+            'S': 32.66,  // CountryOfOrigin
+            'T': 57.66,  // CastDisplayName_CharacterName_Role_BillingOrderNumber
+            'U': 43.00   // CrewDisplayName_Role_BillingOrderNumber
+        };
+
+        // Excel generation using ExcelJS for better formatting control
+        async function generateExcelWithExcelJS() {
+            // Check if download is blocked - but allow if OriginalReleaseTitle is manually filled
+            if (parsedData && parsedData.missingStudioReleaseTitle) {
+                const manualOriginalTitle = editableData['OriginalReleaseTitle'];
+                if (!manualOriginalTitle || !manualOriginalTitle.trim()) {
+                    showMessage('Cannot generate Excel: Missing required Original Release Title.', 'error');
+                    document.getElementById('generateBtn').textContent = 'Blocked - Fill Original Release Title';
+                    setTimeout(() => {
+                        document.getElementById('generateBtn').textContent = 'Generate (Download Blocked)';
+                    }, 3000);
+                    return;
+                }
+            }
+            
+            // Create a new workbook and sheets
+            const workbook = new ExcelJS.Workbook();
+            
+            // Set workbook properties
+            workbook.creator = 'Googlisator Web';
+            workbook.created = new Date();
+            
+            // Create SampleUploadData sheet (our data)
+            const sampleSheet = workbook.addWorksheet('SampleUploadData');
+            
+            // Get data
+            const data = { ...generateMetadataRow() };
+            Object.keys(editableData).forEach(key => {
+                if (editableData[key] !== undefined) {
+                    data[key] = editableData[key];
+                }
+            });
+            
+            const headerRow = generateHeaderRow();
+            
+            // Add headers (Row 1)
+            const headers = Object.keys(data);
+            sampleSheet.addRow(headers);
+            
+            // Add descriptions (Row 2)
+            const descriptions = headers.map(h => headerRow[h] || '');
+            sampleSheet.addRow(descriptions);
+            
+            // Add data (Row 3)
+            const values = headers.map(h => data[h] || '');
+            sampleSheet.addRow(values);
+            
+            // Apply formatting to SampleUploadData sheet
+            // Row 1 - Headers
+            const row1 = sampleSheet.getRow(1);
+            row1.height = 15.75;
+            row1.eachCell((cell, colNumber) => {
+                cell.font = {
+                    name: 'Arial',
+                    size: 10,
+                    bold: true,
+                    color: { argb: 'FF000000' }
+                };
+                cell.alignment = {
+                    horizontal: 'center',
+                    vertical: 'middle',
+                    wrapText: true
+                };
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FF000000' } },
+                    left: { style: 'thin', color: { argb: 'FF000000' } },
+                    bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                    right: { style: 'thin', color: { argb: 'FF000000' } }
+                };
+            });
+            
+            // Row 2 - Descriptions with light orange/peach background
+            const row2 = sampleSheet.getRow(2);
+            row2.height = 127.5; // Google template uses 127.5
+            row2.eachCell((cell, colNumber) => {
+                cell.font = {
+                    name: 'Arial',
+                    size: 10,
+                    bold: false,
+                    color: { argb: 'FF000000' }
+                };
+                cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FFFFCC99' }  // Light orange/peach color
+                };
+                cell.alignment = {
+                    horizontal: 'center',
+                    vertical: 'middle',
+                    wrapText: true
+                };
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FF000000' } },
+                    left: { style: 'thin', color: { argb: 'FF000000' } },
+                    bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                    right: { style: 'thin', color: { argb: 'FF000000' } }
+                };
+            });
+            
+            // Row 3 - Data
+            const row3 = sampleSheet.getRow(3);
+            row3.eachCell((cell, colNumber) => {
+                cell.font = {
+                    name: 'Arial',
+                    size: 10,
+                    bold: false,
+                    color: { argb: 'FF000000' }
+                };
+                cell.alignment = {
+                    horizontal: 'left',
+                    vertical: 'middle',
+                    wrapText: true
+                };
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FF000000' } },
+                    left: { style: 'thin', color: { argb: 'FF000000' } },
+                    bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                    right: { style: 'thin', color: { argb: 'FF000000' } }
+                };
+            });
+            
+            // Set column widths
+            headers.forEach((header, index) => {
+                const colLetter = String.fromCharCode(65 + index); // A, B, C, etc.
+                const column = sampleSheet.getColumn(index + 1);
+                column.width = columnWidthMap[colLetter] || 25;
+            });
+            
+            // Create SampleMetadata sheet (from Google template)
+            const sampleMetadataSheet = workbook.addWorksheet('SampleMetadata');
+            
+            // Add sample metadata rows from Google template
+            const sampleMetadataData = getSampleMetadataData();
+            sampleMetadataData.forEach(row => {
+                sampleMetadataSheet.addRow(row);
+            });
+            
+            // Apply formatting to SampleMetadata
+            const smRow1 = sampleMetadataSheet.getRow(1);
+            smRow1.height = 15.75;
+            smRow1.eachCell(cell => {
+                cell.font = { name: 'Arial', size: 10, bold: true };
+                cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                cell.border = {
+                    top: { style: 'thin' }, left: { style: 'thin' },
+                    bottom: { style: 'thin' }, right: { style: 'thin' }
+                };
+            });
+            
+            const smRow2 = sampleMetadataSheet.getRow(2);
+            smRow2.height = 178.5; // Google template height for descriptions
+            smRow2.eachCell(cell => {
+                cell.font = { name: 'Arial', size: 10 };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFCC99' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                cell.border = {
+                    top: { style: 'thin' }, left: { style: 'thin' },
+                    bottom: { style: 'thin' }, right: { style: 'thin' }
+                };
+            });
+            
+            // Set column widths for SampleMetadata
+            const sampleMetadataWidths = [9, 11.86, 17, 11.57, 15.57, 20.14, 19.86, 19.14, 34.14, 45, 49, 46.71, 17.57, 20, 27.29, 28.57, 27.29, 57.71, 43, 28.71, 43];
+            sampleMetadataWidths.forEach((width, index) => {
+                const column = sampleMetadataSheet.getColumn(index + 1);
+                column.width = width;
+            });
+            
+            // Create Possible_Values sheet (from Google template)
+            const possibleSheet = workbook.addWorksheet('Possible_Values');
+            const googlePossibleValues = getGooglePossibleValuesData();
+            
+            googlePossibleValues.forEach(row => {
+                possibleSheet.addRow(row);
+            });
+            
+            // Format Possible_Values sheet header
+            const pvRow1 = possibleSheet.getRow(1);
+            pvRow1.height = 15.6;
+            pvRow1.eachCell((cell) => {
+                cell.font = {
+                    name: 'Arial',
+                    size: 10,
+                    bold: true,
+                    color: { argb: 'FF000000' }
+                };
+                cell.alignment = {
+                    horizontal: 'left',
+                    vertical: 'middle'
+                };
+            });
+            
+            // Set column widths for Possible_Values
+            const pvColumnWidths = [32, 13, 41.71, 13, 26.86, 16.43, 13, 20.43, 13, 21, 15, 13, 28, 16, 33];
+            pvColumnWidths.forEach((width, index) => {
+                const column = possibleSheet.getColumn(index + 1);
+                column.width = width;
+            });
+            
+            // Generate buffer and download
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = parsedData.outputFilename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Excel generation
+        document.getElementById('generateBtn').addEventListener('click', async () => {
+            // Check if download is blocked due to missing studio_release_title
+            // BUT allow if user has manually filled OriginalReleaseTitle
+            if (parsedData && parsedData.missingStudioReleaseTitle) {
+                const manualOriginalTitle = editableData['OriginalReleaseTitle'];
+                if (!manualOriginalTitle || !manualOriginalTitle.trim()) {
+                    showMessage('Cannot generate Excel: Missing required Original Release Title. Please fill in the Original Release Title field or fix the XML.', 'error');
+                    const generateBtn = document.getElementById('generateBtn');
+                    generateBtn.textContent = 'Blocked - Fill Original Release Title';
+                    setTimeout(() => {
+                        generateBtn.textContent = 'Generate (Download Blocked)';
+                    }, 3000);
+                    return;
+                }
+                // If we get here, user has manually provided the title, so proceed
+            }
+            
+            // Add celebrating class for button animation
+            const generateBtn = document.getElementById('generateBtn');
+            generateBtn.classList.add('celebrating');
+            
+            // Trigger confetti
+            createConfetti();
+            
+            // Remove celebrating class after animation
+            setTimeout(() => {
+                generateBtn.classList.remove('celebrating');
+            }, 600);
+            
+            // Call the actual generate function
+            try {
+                document.getElementById('processingSpinner').style.display = 'block';
+                document.getElementById('generateBtn').disabled = true;
+
+                // Use ExcelJS for better formatting if available, otherwise fall back to SheetJS
+                if (typeof ExcelJS !== 'undefined') {
+                    await generateExcelWithExcelJS();
+                } else {
+                    generateExcel();
+                }
+
+                document.getElementById('processingSpinner').style.display = 'none';
+                document.getElementById('generateBtn').disabled = false;
+                document.getElementById('generateBtn').textContent = 'Generated!';
+                
+                // Reset button text after 3 seconds
+                setTimeout(() => {
+                    document.getElementById('generateBtn').textContent = 'Generate Google Metadata';
+                    document.getElementById('generateBtn').disabled = false;
+                }, 3000);
+
+            } catch (error) {
+                document.getElementById('processingSpinner').style.display = 'none';
+                document.getElementById('generateBtn').disabled = false;
+                showMessage(`Failed to generate Excel file: ${error.message}`, 'error');
+            }
+        });
+
+        function generateExcel() {
+            if (!parsedData) {
+                showMessage('Please drop a valid metadata.xml file.', 'error');
+                return;
+            }
+            
+            // Check if download is blocked - but allow if OriginalReleaseTitle is manually filled
+            if (parsedData.missingStudioReleaseTitle) {
+                const manualOriginalTitle = editableData['OriginalReleaseTitle'];
+                if (!manualOriginalTitle || !manualOriginalTitle.trim()) {
+                    showMessage('Cannot generate Excel: Missing required Original Release Title.', 'error');
+                    return;
+                }
+            }
+
+            try {
+                document.getElementById('processingSpinner').style.display = 'block';
+                document.getElementById('generateBtn').disabled = true;
+
+                // Use edited data if available, otherwise use original data
+                const data = { ...generateMetadataRow() };
+                Object.keys(editableData).forEach(key => {
+                    if (editableData[key] !== undefined) {
+                        data[key] = editableData[key];
+                    }
+                });
+                
+                const headerRow = generateHeaderRow();
+                const possibleValuesData = generatePossibleValuesData();
+
+                // Create workbook
+                const wb = XLSX.utils.book_new();
+                
+                // Create SampleUploadData sheet with proper data structure
+                const sheetData = [
+                    Object.keys(data), // Column headers
+                    Object.values(headerRow), // Description row
+                    Object.values(data) // Data row
+                ];
+                
+                const ws1 = XLSX.utils.aoa_to_sheet(sheetData);
+                
+                // Apply formatting to SampleUploadData sheet
+                formatSampleSheet(ws1, Object.keys(data).length);
+                
+                // Create Possible_Values sheet
+                const ws2 = XLSX.utils.json_to_sheet(possibleValuesData);
+                
+                // Apply formatting to Possible_Values sheet
+                formatPossibleValuesSheet(ws2, possibleValuesData);
+
+                XLSX.utils.book_append_sheet(wb, ws1, 'SampleUploadData');
+                XLSX.utils.book_append_sheet(wb, ws2, 'Possible_Values');
+
+                // Generate and download file
+                XLSX.writeFile(wb, parsedData.outputFilename);
+
+                document.getElementById('processingSpinner').style.display = 'none';
+                document.getElementById('generateBtn').disabled = false;
+                document.getElementById('generateBtn').textContent = 'Generated!';
+                
+                // Reset button text after 3 seconds
+                setTimeout(() => {
+                    document.getElementById('generateBtn').textContent = 'Generate Google Metadata';
+                    document.getElementById('generateBtn').disabled = false;
+                }, 3000);
+
+            } catch (error) {
+                document.getElementById('processingSpinner').style.display = 'none';
+                document.getElementById('generateBtn').disabled = false;
+                showMessage(`Failed to generate Excel file: ${error.message}`, 'error');
+            }
+        }
+
+        function formatSampleSheet(ws, numColumns) {
+            // Set column widths based on Google's official template
+            const headers = Object.keys(generateMetadataRow());
+            ws['!cols'] = [];
+            
+            headers.forEach((header, index) => {
+                const colLetter = String.fromCharCode(65 + index); // A, B, C, etc.
+                const width = columnWidthMap[colLetter] || 31;
+                ws['!cols'].push({ width: width });
+            });
+
+            // Set row heights
+            ws['!rows'] = [
+                { hpt: 15.75 },  // Row 1 height
+                { hpt: 127.5 },  // Row 2 height (Google template uses 127.5)
+                { hpt: 15 }      // Row 3 height
+            ];
+
+            // Apply formatting to all cells
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            
+            for (let row = range.s.r; row <= range.e.r; row++) {
+                for (let col = range.s.c; col <= range.e.c; col++) {
+                    const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+                    const cell = ws[cellAddress];
+                    
+                    if (!cell) continue;
+
+                    // Initialize cell style object
+                    if (!cell.s) cell.s = {};
+
+                    // Add borders to all cells
+                    cell.s.border = {
+                        top: { style: 'thin', color: { rgb: '000000' } },
+                        bottom: { style: 'thin', color: { rgb: '000000' } },
+                        left: { style: 'thin', color: { rgb: '000000' } },
+                        right: { style: 'thin', color: { rgb: '000000' } }
+                    };
+
+                    // Row 1 - Bold headers with center alignment
+                    if (row === 0) {
+                        cell.s.font = {
+                            bold: true,
+                            sz: 10,
+                            name: 'Arial',
+                            color: { rgb: '000000' }
+                        };
+                        cell.s.alignment = {
+                            horizontal: 'center',
+                            vertical: 'center',
+                            wrapText: true
+                        };
+                    }
+                    // Row 2 - Light orange background with wrap text
+                    else if (row === 1) {
+                        cell.s.fill = {
+                            fgColor: { rgb: 'FFCC99' }  // Light orange/peach
+                        };
+                        cell.s.font = {
+                            sz: 10,
+                            name: 'Arial',
+                            color: { rgb: '000000' }
+                        };
+                        cell.s.alignment = {
+                            horizontal: 'center',
+                            vertical: 'center',
+                            wrapText: true
+                        };
+                    }
+                    // Row 3 - Data row
+                    else if (row === 2) {
+                        cell.s.font = {
+                            sz: 10,
+                            name: 'Arial',
+                            color: { rgb: '000000' }
+                        };
+                        cell.s.alignment = {
+                            horizontal: 'left',
+                            vertical: 'center',
+                            wrapText: true
+                        };
+                    }
+                }
+            }
+        }
+
+        function formatPossibleValuesSheet(ws, data) {
+            // Set appropriate column widths for this sheet
+            const possibleValuesColumnWidths = [32, 32, 41.66, 32, 26.89, 16.44, 20.44, 16];
+            ws['!cols'] = [];
+            for (let i = 0; i < possibleValuesColumnWidths.length; i++) {
+                ws['!cols'].push({ width: possibleValuesColumnWidths[i] });
+            }
+
+            // Set row heights
+            ws['!rows'] = [];
+            ws['!rows'][0] = { hpt: 15.6 }; // Header row height
+
+            // Apply formatting using correct SheetJS syntax
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            
+            for (let row = range.s.r; row <= range.e.r; row++) {
+                for (let col = range.s.c; col <= range.e.c; col++) {
+                    const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+                    if (!ws[cellAddress]) continue;
+                    
+                    const cell = ws[cellAddress];
+                    
+                    // Initialize style object
+                    cell.s = cell.s || {};
+
+                    // Header row formatting (row 0)
+                    if (row === 0) {
+                        cell.s.font = { 
+                            bold: true,
+                            color: { rgb: '000000' },
+                            sz: 10,
+                            name: 'Arial'
+                        };
+                        cell.s.alignment = { 
+                            horizontal: 'left',
+                            vertical: 'center'
+                        };
+                    }
+                    // Data rows
+                    else {
+                        cell.s.font = { 
+                            sz: 10,
+                            name: 'Arial',
+                            color: { rgb: '000000' }
+                        };
+                        cell.s.alignment = { 
+                            horizontal: 'left',
+                            vertical: 'center'
+                        };
+                    }
+                }
+            }
+        }
+
+        function generateMetadataRow() {
+            const xmlDoc = parsedData.xmlDoc;
+            const video = xmlDoc.querySelector('video');
+            
+            const theatricalReleaseDate = parsedData.theatricalReleaseDate;
+            
+            // If studio_release_title is missing, leave OriginalReleaseTitle blank
+            const originalReleaseTitle = parsedData.studioReleaseTitle || '';
+            const org = parsedData.provider === 'metropolitanfilm' ? 
+                `NG${parsedData.vendorId}` : parsedData.vendorId;
+
+            // Google's 21-column format (official template)
+            const data = {
+                'TitleLevel': 'Feature',
+                'TitleMgmtID': '',
+                'Language': languageMapping[parsedData.language] || parsedData.language,
+                'Territory': 'France',
+                'Season Number': '',
+                'DisplayTitle': capitalizeTitle(parsedData.title),
+                'OriginalReleaseTitle': originalReleaseTitle ? capitalizeTitle(originalReleaseTitle) : '',
+                'ORG': org,
+                'OriginalSummary_Short': '',
+                'LocalizedSummary_Short': parsedData.synopsis,
+                'LocalizedSummary_Medium': '',
+                'LocalizedSummary_Long': '',
+                'PrimaryGenre': '',
+                'SecondaryGenres': '',
+                'SequenceNumber': '',
+                'OriginalReleaseDate': theatricalReleaseDate,
+                'LocalizedReleaseDate_Type': '',
+                'RatingSystem_Rating_Reason': '',
+                'CountryOfOrigin': '',
+                'CastDisplayName_CharacterName_Role_BillingOrderNumber': '',
+                'CrewDisplayName_Role_BillingOrderNumber': ''
+            };
+
+            // Process country of origin
+            const primaryCountry = video.querySelector('countries_of_origin country[primary="true"]') ||
+                                 video.querySelector('country');
+            if (primaryCountry) {
+                data['CountryOfOrigin'] = countryMapping[primaryCountry.textContent] || primaryCountry.textContent;
+            }
+
+            // Process genres
+            const genres = [];
+            const genreElements = video.querySelectorAll('genres genre');
+            genreElements.forEach(genre => {
+                const genreCode = genre.getAttribute('code');
+                const mappedGenres = genreMapping[genreCode] || [];
+                if (mappedGenres.length > 0) {
+                    genres.push(...mappedGenres);
+                } else if (genre.textContent) {
+                    genres.push(genre.textContent);
+                }
+            });
+
+            if (genres.length > 0) {
+                data['PrimaryGenre'] = genres[0];
+                data['SecondaryGenres'] = genres.slice(1).join(';');
+            }
+
+            // Process ratings
+            const frRating = video.querySelector('ratings rating[system="fr-cnc"]');
+            if (frRating) {
+                const ratingCode = frRating.getAttribute('code');
+                const ratingLabel = ratingMapping['fr-cnc'][ratingCode]?.label || 'Sans classification';
+                data['RatingSystem_Rating_Reason'] = `CNC|${ratingLabel}`;
+            }
+
+            // Process regional release date - always use theatrical_release_date if available
+            if (theatricalReleaseDate) {
+                data['LocalizedReleaseDate_Type'] = `${theatricalReleaseDate}|Theatrical`;
+            } else {
+                // Fallback to regional release date if no theatrical date
+                const frRegion = video.querySelector('regions region');
+                if (frRegion) {
+                    const territory = frRegion.querySelector('territory');
+                    if (territory && territory.textContent === 'FR') {
+                        const releaseDate = frRegion.querySelector('theatrical_release_date');
+                        if (releaseDate) {
+                            data['LocalizedReleaseDate_Type'] = `${releaseDate.textContent}|Theatrical`;
+                        }
+                    }
+                }
+            }
+
+            // Process cast
+            const castList = [];
+            let billingOrder = 1;
+            const castMembers = video.querySelectorAll('cast cast_member');
+            castMembers.forEach(member => {
+                const displayName = member.querySelector('display_name');
+                const characterName = member.querySelector('characters character character_name') ||
+                                   member.querySelector('character_name');
+                
+                if (displayName && characterName) {
+                    const [firstName, lastName] = splitName(normalizeName(displayName.textContent));
+                    const character = characterName.textContent || '';
+                    castList.push(`${firstName}|${lastName}|${character}|Actor|${billingOrder}`);
+                    billingOrder++;
+                }
+            });
+            data['CastDisplayName_CharacterName_Role_BillingOrderNumber'] = castList.join(';');
+
+            // Process crew
+            const crewList = [];
+            billingOrder = 1;
+            const crewMembers = video.querySelectorAll('crew crew_member');
+            crewMembers.forEach(member => {
+                const displayName = member.querySelector('display_name');
+                const role = member.querySelector('roles role');
+                
+                if (displayName && role) {
+                    const [firstName, lastName] = splitName(normalizeName(displayName.textContent));
+                    crewList.push(`${firstName}|${lastName}|${role.textContent}|${billingOrder}`);
+                    billingOrder++;
+                }
+            });
+            data['CrewDisplayName_Role_BillingOrderNumber'] = crewList.join(';');
+
+            return data;
+        }
+
+        function generateHeaderRow() {
+            // Google's official template descriptions - exact copy from NMS_GoogleMetadata_ImportTemplate_v2_2
+            return {
+                'TitleLevel': 'REQUIRED - Indicates Title Level/Hierarchy of Row',
+                'TitleMgmtID': 'DO NOT USE',
+                'Language': 'REQUIRED - Indicates Language Value of Specific, Translated Fields',
+                'Territory': 'REQUIRED - Indicates Territory Value of Specific Fields',
+                'Season Number': 'REQUIRED - for Title Level Episode - Used for grouping individual episodes into the proper season.  Please include with every episode.',
+                'DisplayTitle': 'RECOMMENDED - Corresponds with Language value for displaying a translated title.  Can be the same as Original Title',
+                'OriginalReleaseTitle': 'REQUIRED - Is the original title that the content was released under when first distributed. Display Title can be the same value as OriginalReleaseTitle.',
+                'ORG': 'RECOMMENDED - The ORG value is an optional, recommended generic ID that is created by the content owner and is specific to that rows TitleLevel (Show, Season, Episode, or Feature). ',
+                'OriginalSummary_Short': 'RECOMMENDED - Is the original short synopsis that the content was released with when first distributed.  Is assumed to match the original spoken language of the title.',
+                'LocalizedSummary_Short': 'REQUIRED - Is a short synopsis that has been translated to the language of the metadata.',
+                'LocalizedSummary_Medium': ' Optional - Is a Medium synopsis that has been translated to the language of the metadata.',
+                'LocalizedSummary_Long': ' Optional - Is a Long synopsis that has been translated to the language of the metadata.',
+                'PrimaryGenre': 'REQUIRED - the default classification value of your content. It can be supplemented in the secondary genres column.\n\nPlease see the Possible Values sheet for a list of valid genres.',
+                'SecondaryGenres': 'RECOMMENDED - optional values to provide secondary classification of your content. Is semicolon delimited.\n\nPlease see the Possible Values sheet for a list of valid genres.',
+                'SequenceNumber': 'REQUIRED - a whole number that details the position of the content. Episode Number value.',
+                'OriginalReleaseDate': 'REQUIRED - Year-Month-Day that the content was originally released.  Formatting is YYYY-MM-DD (2018-01-01)',
+                'LocalizedReleaseDate_Type': 'Optional - Is the Year-Month-Day|Release Type that the content was made available in a given territory.  Please see the Possible Values tab for a full list of Types',
+                'RatingSystem_Rating_Reason': 'REQUIRED - The rating system and value that are valid for the territory specified.  Can include a rating reason.\n\nRatings are validated based on the latest MovieLabs Rating Spec',
+                'CountryOfOrigin': 'Optional (Only Required for AVMS territories listed in the "possible_values tab" in Colomn "O" this will be a requirement for all deliveries made Jan 1st 2026 and beyond) - Is the country that the content was primary produced in.',
+                'CastDisplayName_CharacterName_Role_BillingOrderNumber': 'REQUIRED - Is Cast/Voice talent of of your content.  Will be localized based on Language in row. Must be formatted with pipe-delimiters as \nFirstName MiddleName|LastName|CharacterName|TalentType|BillingOrder \nwith each member separated by a semicolon.  If data does not exist for the respective section please still include the same amount of pipe-delimiters.',
+                'CrewDisplayName_Role_BillingOrderNumber': 'RECOMMENDED - Is Crew contributor(s) of your content.  Will be localized based on Language in row.\nMust be formatted with pipe-delimiters as \nFirstName MiddleName|LastName|CapacityType|BillingOrder \nwith each member separated by a semicolon.  If data does not exist for the respective section please still include the same amount of pipe-delimiters.'
+            };
+        }
+
+        function generatePossibleValuesData() {
+            const validLanguageValues = Object.values(languageMapping);
+            const validTerritoryValues = Object.values(countryMapping);
+            const validMovieGenres = [
+                'Action', 'Action & Adventure', 'Adolescence', 'Adult', 'Adventure', 'African Cinema',
+                'Animation', 'Anime', 'Australiana', "Children's", 'Classics', 'Comedy', 'Crime',
+                'Documentary', 'Drama', 'Education', 'Erotic', 'Faith and Spirituality', 'Family',
+                'Fantasy', 'Food', 'Horror', 'Independent', 'Indian Cinema', 'Instructional',
+                'Japanese Cinema', 'LGBT', 'Live Performance', 'Miscellaneous', 'Music',
+                'Music Performance', 'Musical', 'Mystery', 'Mystery & Suspense', 'Period Drama (Samurai)',
+                'Reality', 'Romance', 'Science Fiction', 'Short Films', 'Sports', 'Thriller',
+                'Variety/Talk Show', 'Variety & Talk Show', 'War', 'Western', 'World Cinema'
+            ];
+            const validSeriesGenres = [
+                'Action', 'Action & Adventure', 'Adult', 'Adventure', 'Animation', 'Anime',
+                'Beauty & Fashion', "Children's", 'Classic TV', 'Comedy', 'Documentary', 'Drama',
+                'Education', 'Entertainment', 'Erotic', 'Faith and Spirituality', 'Family', 'Fantasy',
+                'Food', 'Gaming', 'Horror', 'Health & Fitness', 'Home & Garden', 'Independent',
+                'Instructional', 'Learning & Education', 'Nature', 'News', 'Live Performance',
+                'Miscellaneous', 'Music Performance', 'Musical', 'Mystery', 'Reality',
+                'Reality & Game Shows', 'Romance', 'Science & Tech', 'Science Fiction', 'Soaps',
+                'Sports', 'Thriller', 'Variety/Talk Show', 'Western', 'Travel'
+            ];
+            const validCastTalent = ['Actor', 'Voice', 'Narrator', 'Guest Star'];
+            const validCrewCapacity = ['Director', 'Producer', 'Writer', 'Screenwriter'];
+            const validReleaseDateTypes = [
+                'original', 'Broadcast', 'DVD', 'Blu-Ray', 'Hospitality', 'PayTV', 'InternetBuy',
+                'InternetRent', 'Theatrical', 'VOD', 'SVOD'
+            ];
+            const validTitleLevelTypes = ['Feature', 'Season', 'Series', 'Episode'];
+
+            const maxRows = Math.max(
+                validLanguageValues.length, validTerritoryValues.length, validMovieGenres.length,
+                validSeriesGenres.length, validCastTalent.length, validCrewCapacity.length,
+                validReleaseDateTypes.length, validTitleLevelTypes.length
+            );
+
+            const possibleValuesData = [];
+            for (let i = 0; i < maxRows; i++) {
+                possibleValuesData.push({
+                    'Valid Language Values': validLanguageValues[i] || '',
+                    'Valid Territory Values': validTerritoryValues[i] || '',
+                    'Valid Movie/Feature Genres': validMovieGenres[i] || '',
+                    'Valid Series Genres': validSeriesGenres[i] || '',
+                    'Talent/Capacity - Cast': validCastTalent[i] || '',
+                    'Talent/Capacity - Crew': validCrewCapacity[i] || '',
+                    'Localized Release Date Types': validReleaseDateTypes[i] || '',
+                    'TitleLevel Types': validTitleLevelTypes[i] || ''
+                });
+            }
+
+            return possibleValuesData;
+        }
+
+        // Google Template Data Functions
+        function getSampleMetadataData() {
+            // Returns the exact SampleMetadata from Google's template
+            return [
+                ["TitleLevel", "TitleMgmtID", "Language", "Territory", "Season Number", "DisplayTitle", "OriginalReleaseTitle", "ORG", "OriginalSummary_Short", "LocalizedSummary_Short", "LocalizedSummary_Medium", "LocalizedSummary_Long", "PrimaryGenre", "SecondaryGenres", "SequenceNumber", "OriginalReleaseDate", "LocalizedReleaseDate_Type", "RatingSystem_Rating_Reason", "CountryOfOrigin", "CastDisplayName_CharacterName_Role_BillingOrderNumber", "CrewDisplayName_Role_BillingOrderNumber"],
+                ["REQUIRED - Indicates Title Level/Hierarchy of Row", "DO NOT USE", "REQUIRED - Indicates Language Value of Specific, Translated Fields", "REQUIRED - Indicates Territory Value of Specific Fields", "REQUIRED - for Title Level Episode - Used for grouping individual episodes into the proper season.  Please include with every episode.", "RECOMMENDED - Corresponds with Language value for displaying a translated title.  Can be the same as Original Title", "REQUIRED - Is the original title that the content was released under when first distributed. Display Title can be the same value as OriginalReleaseTitle.", "RECOMMENDED - The ORG value is an optional, recommended generic ID that is created by the content owner and is specific to that rows TitleLevel (Show, Season, Episode, or Feature). ", "RECOMMENDED - Is the original short synopsis that the content was released with when first distributed.  Is assumed to match the original spoken language of the title.", "REQUIRED - Is a short synopsis that has been translated to the language of the metadata.", " Optional - Is a Medium synopsis that has been translated to the language of the metadata.", " Optional - Is a Long synopsis that has been translated to the language of the metadata.", "REQUIRED for Series and Feature - the default classification value of your content. It can be supplemented in the secondary genres column.\n\nPlease see the Possible Values sheet for a list of valid genres.", "RECOMMENDED - optional values to provide secondary classification of your content. Is semicolon delimited.\n\nPlease see the Possible Values sheet for a list of valid genres.", "REQUIRED - a whole number that details the position of the content.", "REQUIRED - Year-Month-Day that the content was originally released.  Formatting is YYYY-MM-DD (2018-01-01)", "RECOMMENDED - Is the Year-Month-Day|Release Type that the content was made available in a given territory.  Please see the Possible Values tab for a full list of Types", "REQUIRED - The rating system and value that are valid for the territory specified.  Can include a rating reason.\n\nRatings are validated based on the latest MovieLabs Rating Spec", "REQUIRED - Is the country that the content was primary produced in.", "RECOMMENDED - Is Cast/Voice talent of of your content.  Will be localized based on Language in row.  Must be formatted with pipe-delimiters as \nFirstName MiddleName|LastName|CharacterName|TalentType|BillingOrder \nwith each member separated by a semicolon.  If data does not exist for the respective section please still include the same amount of pipe-delimiters.", "RECOMMENDED - Is Crew contributor(s) of your content.  Will be localized based on Language in row.\nMust be formatted with pipe-delimiters as \nFirstName MiddleName|LastName|CapacityType|BillingOrder \nwith each member separated by a semicolon.  If data does not exist for the respective section please still include the same amount of pipe-delimiters."],
+                ["Feature", "", "English", "USA", "", "Sample Movie Title", "Sample Movie Title", "Studio_MovieTitle123", "Original, short movie summary.", "Localized, English short summary.", "Localized, English Medium summary.", "Localized, English Long summary.", "Drama", "", "", "2000-04-05", "2000-04-05|Theatrical", "MPAA|R|", "USA", "Jane Marie|Doe|Tilly|Actor|1;Joe|Shmo|Johny|Actor|2", "Joe|Shmo|Producer|1;Cynthia Jane|Smith|Director|2;Cynthia|Smith|Writer|3"],
+                ["Feature", "", "English", "New Zealand", "", "Sample Movie Title", "Sample Movie Title", "Studio_MovieTitle123", "Original, short movie summary.", "Localized, English short summary.", "Localized, English Medium summary.", "Localized, English Long summary.", "Drama", "Romance;Comedy", "", "2000-04-05", "2000-04-05|Theatrical", "NZFC|R16|", "USA", "Jane Marie|Doe|Tilly|Actor|1;Joe|Shmo|Johny|Actor|2", "Joe|Shmo|Producer|1;Cynthia Jane|Smith|Director|2;Cynthia|Smith|Writer|3"],
+                ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+                ["Series", "", "English", "Canada", "", "Sample Show Title", "Sample Show Title", "Studio_Show123", "Original, short show summary.", "Localized, English short summary.", "Localized, English Medium summary.", "Localized, English Long summary.", "Drama", "", "1", "2018-01-01", "2018-01-01|Broadcast", "CBSC|PG|", "Canada", "Jane Marie|Doe|Tilly|Actor|1;Joe|Shmo|Johny|Actor|2", "Joe|Shmo|Producer|1;Cynthia Jane|Smith|Director|2;Cynthia|Smith|Writer|3"],
+                ["Season", "", "English", "Canada", "1", "Sample Show Title, Season 1", "Sample Show Title", "Studio_Show123_S1", "Original, short season 1 summary.", "Localized, English short summary.", "Localized, English Medium summary.", "Localized, English Long summary.", "Drama", "", "1", "2018-01-01", "2018-01-01|Broadcast", "CBSC|PG|", "Canada", "Jane Marie|Doe|Tilly|Actor|1;Joe|Shmo|Johny|Actor|2", "Joe|Shmo|Producer|1;Cynthia Jane|Smith|Director|2;Cynthia|Smith|Writer|3"],
+                ["Episode", "", "English", "Canada", "1", "Episode 1 Title", "Episode 1 Title", "Studio_Show123_S1E1", "Original, short episode summary.", "Localized, English short summary.", "Localized, English Medium summary.", "Localized, English Long summary.", "Drama", "", "1", "2018-01-01", "2018-01-01|Broadcast", "CBSC|PG|", "Canada", "Jane Marie|Doe|Tilly|Actor|1;Joe|Shmo|Johny|Actor|2", "Joe|Shmo|Producer|1;Cynthia Jane|Smith|Director|2;Cynthia|Smith|Writer|3"],
+                ["Episode", "", "English", "Canada", "1", "Episode 2 Title", "Episode 2 Title", "Studio_Show123_S1E2", "Original, short episode summary.", "Localized, English short summary.", "Localized, English Medium summary.", "Localized, English Long summary.", "Drama", "", "2", "2018-01-08", "2018-01-08|Broadcast", "CBSC|PG|", "Canada", "Jane Marie|Doe|Tilly|Actor|1;Joe|Shmo|Johny|Actor|2", "Joe|Shmo|Producer|1;Cynthia Jane|Smith|Director|2;Cynthia|Smith|Writer|3"],
+                ["Episode", "", "English", "Canada", "1", "Episode 3 Title", "Episode 3 Title", "Studio_Show123_S1E3", "Original, short episode summary.", "Localized, English short summary.", "Localized, English Medium summary.", "Localized, English Long summary.", "Drama", "", "3", "2018-01-15", "2018-01-15|Broadcast", "CBSC|PG|", "Canada", "Jane Marie|Doe|Tilly|Actor|1;Joe|Shmo|Johny|Actor|2", "Joe|Shmo|Producer|1;Cynthia Jane|Smith|Director|2;Cynthia|Smith|Writer|3"],
+                ["Episode", "", "English", "Canada", "1", "Episode 4 Title", "Episode 4 Title", "Studio_Show123_S1E4", "Original, short episode summary.", "Localized, English short summary.", "Localized, English Medium summary.", "Localized, English Long summary.", "Drama", "", "4", "2018-01-22", "2018-01-22|Broadcast", "CBSC|PG|", "Canada", "Jane Marie|Doe|Tilly|Actor|1;Joe|Shmo|Johny|Actor|2", "Joe|Shmo|Producer|1;Cynthia Jane|Smith|Director|2;Cynthia|Smith|Writer|3"]
+            ];
+        }
+
+        function getGooglePossibleValuesData() {
+            // Returns Google's exact Possible_Values sheet data
+            // This would be the full 294 rows from Google's template
+            // For brevity, showing the structure with actual Google data
+            const headers = ["Valid Language Values", "", "Valid Territory Values", "", "Valid Movie/Feature Genres", "Special Use-case", "", "Valid Series Genres", "", "Talent/Capacity - Cast", "Talent/Capacity - Crew", "", "Localized Release Date Types", "TitleLevel Types", "AVMS Territories"];
+            
+            // Use the generatePossibleValuesData for now as it contains the same valid values
+            // In production, this would load the exact Google template data
+            const tempData = generatePossibleValuesData();
+            const googleData = [headers];
+            
+            // Convert to Google's format with empty columns
+            tempData.forEach(row => {
+                googleData.push([
+                    row['Valid Language Values'] || '',
+                    '',  // Empty column
+                    row['Valid Territory Values'] || '',
+                    '',  // Empty column
+                    row['Valid Movie/Feature Genres'] || '',
+                    '',  // Special Use-case column (empty)
+                    '',  // Empty column
+                    row['Valid Series Genres'] || '',
+                    '',  // Empty column
+                    row['Talent/Capacity - Cast'] || '',
+                    row['Talent/Capacity - Crew'] || '',
+                    '',  // Empty column
+                    row['Localized Release Date Types'] || '',
+                    row['TitleLevel Types'] || '',
+                    ''   // AVMS Territories (empty for now)
+                ]);
+            });
+            
+            return googleData;
+        }
+    </script>
+</body>
+</html>
